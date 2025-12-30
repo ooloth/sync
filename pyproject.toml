@@ -1,3 +1,8 @@
+# Helps scripts below work
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "youtube-sync"
 version = "0.1.0"
@@ -14,3 +19,9 @@ dev = [
     "ruff>=0.14.10",
     "ty>=0.0.8",
 ]
+
+# uv run youtube-sync-likes
+# uv run youtube-sync-subs
+[project.scripts]
+sync-likes = "youtube_sync.jobs.sync_likes:main"
+sync-subs = "youtube_sync.jobs.sync_subs:main"
