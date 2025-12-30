@@ -5,3 +5,8 @@ description = "Adds my YouTube subscriptions to Feedbin and my liked videos to N
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = []
+
+[dependency-groups]
+dev = [
+    "ruff>=0.14.10",
+]
