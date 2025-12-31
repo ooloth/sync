@@ -15,6 +15,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "inline-snapshot>=0.31.1",
     "pytest>=9.0.2",
     "ruff>=0.14.10",
     "ty>=0.0.8",
