@@ -24,20 +24,46 @@ from functools import lru_cache
 VAULT = "Scripts"
 
 
-PasswordOrStringifiedJson = str
-
-
 @lru_cache
-def get_secret(item: str, field: str) -> PasswordOrStringifiedJson:
+def get_secret(item: str, field: str) -> str:
     """
-    Generate a 1Password secret reference and retrieve the secret's value.
+    Retrieve a secret from 1Password CLI.
 
-    See: https://developer.1password.com/docs/cli/secret-reference-syntax#a-field-without-a-section
+    Args:
+        item: The 1Password item name (e.g., "Feedbin", "Pushover")
+        field: The field name within the item (e.g., "username", "password")
+
+    Returns:
+        The secret value as a string
+
+    Raises:
+        FileNotFoundError: If the 1Password CLI (op) is not installed
+        RuntimeError: If the op CLI command fails (e.g., item not found, auth failed)
+
+    Note:
+        Results are cached via @lru_cache to avoid repeated subprocess calls.
+        Each unique (item, field) combination is only fetched once per program run.
+
+    Example:
+        >>> username = get_secret("Feedbin", "username")
+        >>> password = get_secret("Feedbin", "password")
     """
-    result = subprocess.run(
-        ["op", "read", f"op://{VAULT}/{item}/{field}"],
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    return result.stdout.strip()
+    try:
+        result = subprocess.run(
+            ["op", "read", f"op://{VAULT}/{item}/{field}"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip()
+    except FileNotFoundError as e:
+        raise FileNotFoundError(
+            "1Password CLI (op) not found. "
+            "Install it: https://developer.1password.com/docs/cli/get-started/"
+        ) from e
+    except subprocess.CalledProcessError as e:
+        stderr = e.stderr.strip() if e.stderr else "no error output"
+        raise RuntimeError(
+            f"Failed to read secret '{field}' from 1Password item '{item}' in vault '{VAULT}'. "
+            f"Error: {stderr}"
+        ) from e
