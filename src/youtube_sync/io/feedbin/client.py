@@ -74,6 +74,6 @@ class FeedbinClient:
 @lru_cache
 def create_client() -> FeedbinClient:
     """Create a Feedbin client with credentials from 1Password."""
-    username = get_secret("Feedbin", "username")
-    password = get_secret("Feedbin", "password")
+    username = get_secret("Feedbin API", "username")
+    password = get_secret("Feedbin API", "password")
     return FeedbinClient(username, password)
