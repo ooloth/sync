@@ -1,3 +1,3 @@
 # youtube-sync
 
-Adds my YouTube subscriptions to Feedbin and my liked videos to Notion.
+Adds my YouTube subscriptions to my Feedbin subscriptions and my liked videos to Notion.
