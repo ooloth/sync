@@ -28,3 +28,6 @@ dev = [
 [project.scripts]
 sync-likes = "youtube_sync.jobs.sync_likes:main"
 sync-subs = "youtube_sync.jobs.sync_subs:main"
+
+[tool.ruff]
+line-length = 100
