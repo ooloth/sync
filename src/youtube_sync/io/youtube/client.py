@@ -31,11 +31,13 @@ API_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 
 def _get_tokens_file() -> Path:
     """Get the path to the OAuth tokens file."""
-    # Allow override via environment variable, otherwise use project default
+    # Allow override via environment variable, otherwise use project .secrets/
     tokens_path = os.getenv("YOUTUBE_TOKENS_FILE")
     if tokens_path:
         return Path(tokens_path)
-    return Path.home() / ".config" / "youtube-sync" / "oauth_tokens.json"
+    # Project root is 5 levels up from this file: src/youtube_sync/io/youtube/client.py
+    project_root = Path(__file__).parent.parent.parent.parent.parent
+    return project_root / ".secrets" / "oauth_tokens.json"
 
 
 def _fetch_new_oauth_tokens(client_config: dict, scopes: list[str] = API_SCOPES) -> Credentials:
