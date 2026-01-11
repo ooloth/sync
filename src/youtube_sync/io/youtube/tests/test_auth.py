@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
-from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 
 from youtube_sync.io.youtube.auth import (
@@ -94,7 +93,9 @@ def test_get_tokens_file_falls_back_to_home(monkeypatch, tmp_path):
 
 def test_fetch_new_oauth_tokens_success(mock_client_config, mock_credentials):
     """Verify _fetch_new_oauth_tokens successfully obtains tokens via browser flow."""
-    with patch("youtube_sync.io.youtube.auth.InstalledAppFlow.from_client_config") as mock_flow_class:
+    with patch(
+        "youtube_sync.io.youtube.auth.InstalledAppFlow.from_client_config"
+    ) as mock_flow_class:
         mock_flow = Mock()
         mock_flow.run_local_server.return_value = mock_credentials
         mock_flow_class.return_value = mock_flow
@@ -108,7 +109,9 @@ def test_fetch_new_oauth_tokens_success(mock_client_config, mock_credentials):
 
 def test_fetch_new_oauth_tokens_propagates_errors(mock_client_config):
     """Verify _fetch_new_oauth_tokens propagates errors from OAuth flow."""
-    with patch("youtube_sync.io.youtube.auth.InstalledAppFlow.from_client_config") as mock_flow_class:
+    with patch(
+        "youtube_sync.io.youtube.auth.InstalledAppFlow.from_client_config"
+    ) as mock_flow_class:
         mock_flow = Mock()
         mock_flow.run_local_server.side_effect = Exception("OAuth failed")
         mock_flow_class.return_value = mock_flow
@@ -141,7 +144,9 @@ def test_cache_access_token_creates_parent_dirs(tmp_path, mock_credentials):
     assert tokens_file.parent.exists()
 
 
-def test_youtube_auth_get_credentials_uses_valid_cache(tmp_path, mock_client_config, mock_credentials):
+def test_youtube_auth_get_credentials_uses_valid_cache(
+    tmp_path, mock_client_config, mock_credentials
+):
     """Verify YouTubeAuth uses cached access token when still valid."""
     # Create cache file with valid token
     tokens_file = tmp_path / "tokens.json"
@@ -204,6 +209,8 @@ def test_youtube_auth_refreshes_expired_token(tmp_path, mock_client_config, mock
 
         result = auth.get_credentials()
 
+        # Should return the refreshed credentials
+        assert result == refresh_creds
         # Should have called refresh
         refresh_creds.refresh.assert_called_once()
         # Should have cached the new token
@@ -228,6 +235,8 @@ def test_youtube_auth_handles_missing_cache(tmp_path, mock_client_config):
 
         result = auth.get_credentials()
 
+        # Should return valid credentials
+        assert result.valid
         # Should have attempted to get refresh token from 1Password
         mock_creds.refresh.assert_called_once()
 
@@ -239,11 +248,15 @@ def test_youtube_auth_handles_refresh_token_error(tmp_path, mock_client_config, 
 
     with (
         patch("youtube_sync.io.youtube.auth.get_secret", side_effect=Exception("1Password error")),
-        patch("youtube_sync.io.youtube.auth._fetch_new_oauth_tokens", return_value=mock_credentials) as mock_oauth,
+        patch(
+            "youtube_sync.io.youtube.auth._fetch_new_oauth_tokens", return_value=mock_credentials
+        ) as mock_oauth,
         patch("youtube_sync.io.youtube.auth._cache_access_token") as mock_cache,
     ):
         result = auth.get_credentials()
 
+        # Should return the credentials from OAuth
+        assert result == mock_credentials
         # Should have fallen back to full OAuth flow
         mock_oauth.assert_called_once_with(mock_client_config, API_SCOPES)
         mock_cache.assert_called_once()
@@ -257,7 +270,9 @@ def test_youtube_auth_handles_invalid_refresh_token(tmp_path, mock_client_config
     with (
         patch("youtube_sync.io.youtube.auth.get_secret", return_value="invalid_refresh_token"),
         patch("youtube_sync.io.youtube.auth.Credentials") as mock_creds_class,
-        patch("youtube_sync.io.youtube.auth._fetch_new_oauth_tokens", return_value=mock_credentials) as mock_oauth,
+        patch(
+            "youtube_sync.io.youtube.auth._fetch_new_oauth_tokens", return_value=mock_credentials
+        ) as mock_oauth,
         patch("youtube_sync.io.youtube.auth._cache_access_token") as mock_cache,
     ):
         refresh_creds = Mock(spec=Credentials)
@@ -266,6 +281,8 @@ def test_youtube_auth_handles_invalid_refresh_token(tmp_path, mock_client_config
 
         result = auth.get_credentials()
 
+        # Should return the credentials from OAuth
+        assert result == mock_credentials
         # Should have fallen back to full OAuth flow
         mock_oauth.assert_called_once()
         mock_cache.assert_called_once()
@@ -275,7 +292,9 @@ def test_youtube_auth_uses_custom_scopes(tmp_path, mock_client_config):
     """Verify YouTubeAuth respects custom scopes."""
     tokens_file = tmp_path / "tokens.json"
     custom_scopes = ["https://www.googleapis.com/auth/youtube.force-ssl"]
-    auth = YouTubeAuth(client_config=mock_client_config, tokens_file=tokens_file, scopes=custom_scopes)
+    auth = YouTubeAuth(
+        client_config=mock_client_config, tokens_file=tokens_file, scopes=custom_scopes
+    )
 
     assert auth.scopes == custom_scopes
 
@@ -291,8 +310,12 @@ def test_youtube_auth_defaults_to_api_scopes(tmp_path, mock_client_config):
 def test_create_auth_from_1password(mock_client_config):
     """Verify create_auth_from_1password retrieves config from 1Password."""
     with (
-        patch("youtube_sync.io.youtube.auth.get_secret", return_value=json.dumps(mock_client_config)),
-        patch("youtube_sync.io.youtube.auth._get_tokens_file", return_value=Path("/tmp/tokens.json")),
+        patch(
+            "youtube_sync.io.youtube.auth.get_secret", return_value=json.dumps(mock_client_config)
+        ),
+        patch(
+            "youtube_sync.io.youtube.auth._get_tokens_file", return_value=Path("/tmp/tokens.json")
+        ),
     ):
         auth = create_auth_from_1password()
 

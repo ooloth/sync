@@ -38,6 +38,7 @@ def _get_tokens_file() -> Path:
     try:
         # Try to find project root via git
         import subprocess
+
         result = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
             capture_output=True,
@@ -184,7 +185,9 @@ class YouTubeAuth:
                 token_data = json.load(f)
 
             # Reconstruct credentials from minimal cached data
-            expiry = datetime.fromisoformat(token_data["expiry"]) if token_data.get("expiry") else None
+            expiry = (
+                datetime.fromisoformat(token_data["expiry"]) if token_data.get("expiry") else None
+            )
             return Credentials(
                 token=token_data["token"],
                 expiry=expiry,
@@ -198,7 +201,9 @@ class YouTubeAuth:
         logger.info("Starting new OAuth browser flow...")
         credentials = _fetch_new_oauth_tokens(self.client_config, self.scopes)
 
-        logger.warning("⚠️  Manual step required: Please update 'YouTube API' -> 'oauth_refresh_token' in 1Password")
+        logger.warning(
+            "⚠️  Manual step required: Please update 'YouTube API' -> 'oauth_refresh_token' in 1Password"
+        )
         logger.warning(f"   New refresh token: {credentials.refresh_token}")
 
         # Cache and return
