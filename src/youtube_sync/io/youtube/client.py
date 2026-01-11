@@ -30,14 +30,14 @@ API_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 
 
 def _get_tokens_file() -> Path:
-    """Get the path to the OAuth tokens file."""
+    """Get the path to the OAuth access token cache file."""
     # Allow override via environment variable, otherwise use project .secrets/
     tokens_path = os.getenv("YOUTUBE_TOKENS_FILE")
     if tokens_path:
         return Path(tokens_path)
     # Project root is 5 levels up from this file: src/youtube_sync/io/youtube/client.py
     project_root = Path(__file__).parent.parent.parent.parent.parent
-    return project_root / ".secrets" / "oauth_tokens.json"
+    return project_root / ".secrets" / "oauth_access_token.json"
 
 
 def _fetch_new_oauth_tokens(client_config: dict, scopes: list[str] = API_SCOPES) -> Credentials:
@@ -59,43 +59,118 @@ def _fetch_new_oauth_tokens(client_config: dict, scopes: list[str] = API_SCOPES)
 
 def _generate_oauth_credentials(client_config: dict, tokens_file: Path) -> Credentials:
     """
-    Generates OAuth credentials from a saved, refreshed or new access token.
+    Generates OAuth credentials using a hybrid approach for security and performance.
+
+    OAuth Token Lifecycle:
+    - access_token: Short-lived (~1 hour), used for API requests
+    - refresh_token: Long-lived (months/years), used to get new access tokens
+
+    Storage Strategy:
+    1. Disk cache (.secrets/oauth_access_token.json):
+       - ONLY contains: access token + expiry
+       - Fast path when access token still valid (~1 hour window)
+       - Per RFC 9700: short-lived tokens can be cached, long-lived credentials stay secure
+
+    2. 1Password:
+       - oauth_client_secrets.json: OAuth app credentials (client_id, client_secret)
+       - oauth_refresh_token: Long-lived refresh token (the key credential)
+       - Only updated on full OAuth flow (rare - when refresh token expires/revoked)
+
+    Flow:
+    1. Try disk cache - if access token valid, use it (fast!)
+    2. If not, fetch client config + refresh token from 1Password
+    3. Use refresh token to get new access token
+    4. Cache ONLY the access token to disk for next run
+    5. If refresh fails (bad refresh token), do full OAuth and update 1Password
     """
     credentials: Credentials | None = None
 
-    print("🥁 Checking for saved tokens...")
-
+    # Try disk cache first (fast path - only if access token still valid)
+    print("🥁 Checking for cached access token...")
     if tokens_file.exists():
-        print("👍 Saved tokens found")
         try:
-            print(f'🥁 Loading saved tokens from "{tokens_file}"...')
-            credentials = Credentials.from_authorized_user_file(str(tokens_file), API_SCOPES)
+            print(f'🥁 Loading cached access token from "{tokens_file}"...')
+            with open(tokens_file) as f:
+                token_data = json.load(f)
+
+            # Reconstruct credentials from minimal cached data
+            from datetime import datetime
+
+            expiry = datetime.fromisoformat(token_data["expiry"])
+            credentials = Credentials(
+                token=token_data["token"],
+                expiry=expiry,
+            )
+
+            if credentials.valid:
+                print("✅ Cached access token is still valid")
+                return credentials
+            print("⏰ Cached access token expired")
         except Exception as e:
-            print(f"😱 Error loading tokens: {e}")
-            credentials = _fetch_new_oauth_tokens(client_config)
-    else:
-        print("👎 No saved tokens found")
+            print(f"⚠️  Error loading cached access token: {e}")
+
+    # Access token expired or missing - need to refresh using refresh token
+    print("🥁 Fetching refresh token from 1Password...")
+    try:
+        refresh_token = get_secret("YouTube API", "oauth_refresh_token")
+        print("✅ Loaded refresh token from 1Password")
+
+        # Build credentials with refresh token
+        credentials = Credentials(
+            token=None,  # Will be populated by refresh
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=client_config["installed"]["client_id"],
+            client_secret=client_config["installed"]["client_secret"],
+            scopes=API_SCOPES,
+        )
+    except Exception as e:
+        print(f"⚠️  Error loading refresh token from 1Password: {e}")
+        print("🥁 Starting OAuth flow...")
         credentials = _fetch_new_oauth_tokens(client_config)
+        print("⚠️  Manual step: Please update 'YouTube API' -> 'oauth_refresh_token' in 1Password")
+        print(f"   New refresh token: {credentials.refresh_token}")
+        # Cache and return
+        _cache_access_token(credentials, tokens_file)
+        return credentials
 
-    if not credentials.valid:
-        if credentials.expired and credentials.refresh_token:
-            try:
-                print("🥁 Refreshing expired access token...")
-                credentials.refresh(Request())
-            except Exception as e:
-                print(f"😱 Error refreshing token: {e}")
-                credentials = _fetch_new_oauth_tokens(client_config)
-        else:
-            credentials = _fetch_new_oauth_tokens(client_config)
+    # Use refresh token to get new access token
+    try:
+        print("🥁 Using refresh token to get new access token...")
+        credentials.refresh(Request())
+        print("✅ Access token refreshed successfully")
+    except Exception as e:
+        print(f"😱 Refresh token invalid or expired: {e}")
+        print("🥁 Starting new OAuth flow...")
+        credentials = _fetch_new_oauth_tokens(client_config)
+        print("⚠️  Manual step: Please update 'YouTube API' -> 'oauth_refresh_token' in 1Password")
+        print(f"   New refresh token: {credentials.refresh_token}")
 
-        # Ensure parent directory exists
-        tokens_file.parent.mkdir(parents=True, exist_ok=True)
-
-        print(f'🥁 Saving updated tokens to "{tokens_file}"...')
-        with open(tokens_file, "w") as file:
-            file.write(credentials.to_json())
+    # Cache ONLY access token to disk (no refresh token, no client secrets)
+    _cache_access_token(credentials, tokens_file)
 
     return credentials
+
+
+def _cache_access_token(credentials: Credentials, tokens_file: Path) -> None:
+    """
+    Cache only the access token to disk, following OAuth 2.0 security best practices (RFC 9700).
+
+    Cached: access token + expiry (short-lived, ~1hr)
+    Not cached: refresh_token, client_id, client_secret (long-lived credentials stay in 1Password)
+    """
+    tokens_file.parent.mkdir(parents=True, exist_ok=True)
+
+    # Minimal token data - only what's needed for the fast path
+    token_data = {
+        "token": credentials.token,
+        "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
+    }
+
+    print(f'🥁 Caching access token to "{tokens_file}"...')
+    with open(tokens_file, "w") as file:
+        json.dump(token_data, file, indent=2)
+    print("✅ Access token cached (refresh token stays in 1Password)")
 
 
 class YouTubeClient:
