@@ -80,7 +80,16 @@ def test_list_subscriptions_handles_null_site_url(httpx_mock: HTTPXMock):
     subs = client.list_subscriptions()
 
     assert len(subs) == 1
-    assert subs[0].site_url is None
+    assert subs[0] == snapshot(
+        FeedbinSubscription(
+            id=123,
+            feed_id=456,
+            title="Test Feed",
+            feed_url=HttpUrl("https://example.com/feed.xml"),
+            site_url=None,
+            created_at="2024-01-15T12:00:00.000000Z",
+        )
+    )
 
 
 def test_create_subscription_returns_parsed_model(httpx_mock: HTTPXMock):
@@ -100,10 +109,16 @@ def test_create_subscription_returns_parsed_model(httpx_mock: HTTPXMock):
     client = FeedbinClient(username="test", password="test")
     sub = client.create_subscription("https://example.com/feed.xml")
 
-    assert isinstance(sub, FeedbinSubscription)
-    assert sub.id == 789
-    assert sub.title == "New Channel"
-    assert str(sub.feed_url) == "https://example.com/feed.xml"
+    assert sub == snapshot(
+        FeedbinSubscription(
+            id=789,
+            feed_id=999,
+            title="New Channel",
+            feed_url=HttpUrl("https://example.com/feed.xml"),
+            site_url=None,
+            created_at="2024-01-15T13:00:00.000000Z",
+        )
+    )
 
 
 def test_create_subscription_sends_correct_payload(httpx_mock: HTTPXMock):

@@ -24,10 +24,13 @@ def test_send_message_basic(httpx_mock: HTTPXMock):
     client = PushoverClient(app_token="test_app", user_key="test_user")
     response = client.send_message("Test message")
 
-    assert isinstance(response, PushoverResponse)
-    assert response.status == 1
-    assert response.request == "abc123-def456-ghi789"
-    assert response.errors is None
+    assert response == snapshot(
+        PushoverResponse(
+            status=1,
+            request="abc123-def456-ghi789",
+            errors=None,
+        )
+    )
 
 
 def test_send_message_with_title(httpx_mock: HTTPXMock):
@@ -134,8 +137,13 @@ def test_send_message_handles_error_response(httpx_mock: HTTPXMock):
     client = PushoverClient(app_token="bad_token", user_key="bad_user")
     response = client.send_message("Test")
 
-    assert response.status == 0
-    assert response.errors == ["user identifier is invalid", "application token is invalid"]
+    assert response == snapshot(
+        PushoverResponse(
+            status=0,
+            request="error-request-id",
+            errors=["user identifier is invalid", "application token is invalid"],
+        )
+    )
 
 
 def test_client_raises_on_http_error(httpx_mock: HTTPXMock):
