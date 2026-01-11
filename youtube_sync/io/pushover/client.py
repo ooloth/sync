@@ -1,61 +1,64 @@
 """
-Docs:
-- https://pushover-complete.readthedocs.io/en/stable/api.html
-- https://pushover.net/api
+Pushover API client
+https://pushover.net/api
 """
 
-import os
+from functools import lru_cache
 
-from common.logs import log
-from common.secrets import get_secret
-from pushover_complete import PushoverAPI  # type: ignore[import-untyped]
+import httpx
 
-OP_ITEM = "Pushover"
-OP_FIELD_APP_TOKEN = "app: scripts repo"
-OP_FIELD_USER_KEY = "user key"
+from youtube_sync.io.op.secrets import get_secret
+from youtube_sync.io.pushover.models import PushoverResponse
 
-_client: PushoverAPI | None = None
+API_BASE = "https://api.pushover.net/1"
 
 
-def get_client() -> PushoverAPI:
-    """Return a reusable pushover client."""
-    global _client
+class PushoverClient:
+    """Client for Pushover notification API."""
 
-    if _client is None:
-        _client = PushoverAPI(get_secret(OP_ITEM, OP_FIELD_APP_TOKEN))
+    def __init__(self, app_token: str, user_key: str):
+        self._client = httpx.Client(base_url=API_BASE)
+        self._app_token = app_token
+        self._user_key = user_key
 
-    return _client
+    def send_message(
+        self,
+        message: str,
+        *,
+        title: str | None = None,
+        html: bool = False,
+    ) -> PushoverResponse:
+        """Send a push notification."""
+        payload = {
+            "token": self._app_token,
+            "user": self._user_key,
+            "message": message,
+        }
+
+        if title:
+            payload["title"] = title
+
+        if html:
+            payload["html"] = 1
+
+        response = self._client.post("/messages.json", data=payload)
+        response.raise_for_status()
+        return PushoverResponse.model_validate(response.json())
+
+    def close(self) -> None:
+        """Close the HTTP client."""
+        self._client.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
 
 
-def send_notification(*, title: str, html: str, dry_run: bool = False) -> None:
-    """
-    Send a notification with the given subject and HTML content.
-
-    Args:
-        title (str): The subject of the notification.
-        html (str): The HTML content of the notification.
-        dry_run (bool): If True, the notification will not be sent. Defaults to False.
-
-    Raises:
-        Exception: If there is an error sending the notification, it will be logged.
-    """
-    dry_run = os.getenv("DRY_RUN") == "true" or dry_run
-
-    try:
-        client = get_client()
-
-        if dry_run:
-            log.info(f"🌵 Skipping '{title}' email (dry run)")
-            return
-
-        client.send_message(
-            user=get_secret(OP_ITEM, OP_FIELD_USER_KEY),
-            title=title,
-            message=html,
-            html=True,
-        )
-        log.info("✅ Notification sent successfully.")
-    except Exception:
-        log.error(
-            f"🚨 There was a problem sending the '{title}' notification.", exc_info=True
-        )
+@lru_cache
+def create_client() -> PushoverClient:
+    """Create a Pushover client with credentials from 1Password."""
+    app_token = get_secret("Pushover", "app: scripts repo")
+    user_key = get_secret("Pushover", "user key")
+    return PushoverClient(app_token, user_key)
