@@ -2,9 +2,12 @@
 Tests for YouTube Data API client
 """
 
+import datetime
 from unittest.mock import Mock, patch
 
 import pytest
+from inline_snapshot import snapshot
+from pydantic_core import TzInfo
 
 from youtube_sync.io.youtube.auth import YouTubeAuth
 from youtube_sync.io.youtube.client import YouTubeClient, create_client
@@ -28,7 +31,9 @@ def mock_youtube_resource():
 
 def test_client_initializes_youtube_resource(mock_credentials, mock_youtube_resource):
     """Verify YouTubeClient initializes the YouTube API resource correctly."""
-    with patch("youtube_sync.io.youtube.client.build", return_value=mock_youtube_resource) as mock_build:
+    with patch(
+        "youtube_sync.io.youtube.client.build", return_value=mock_youtube_resource
+    ) as mock_build:
         client = YouTubeClient(mock_credentials)
 
         mock_build.assert_called_once_with(
@@ -58,7 +63,11 @@ def test_list_subscriptions_handles_single_page(mock_credentials, mock_youtube_r
                         "channelId": "UC123",
                     },
                     "thumbnails": {
-                        "default": {"url": "https://example.com/thumb.jpg", "width": 88, "height": 88}
+                        "default": {
+                            "url": "https://example.com/thumb.jpg",
+                            "width": 88,
+                            "height": 88,
+                        }
                     },
                 },
                 "contentDetails": {
@@ -84,9 +93,32 @@ def test_list_subscriptions_handles_single_page(mock_credentials, mock_youtube_r
 
     assert len(subs) == 1
     assert isinstance(subs[0], YouTubeSubscription)
-    assert subs[0].id == "sub123"
-    assert subs[0].snippet.title == "Test Channel"
-    assert subs[0].content_details.total_item_count == 42
+    # Use snapshot for the subscription object to ensure complete validation
+    assert subs[0].model_dump() == snapshot(
+        {
+            "kind": "youtube#subscription",
+            "etag": "test_etag_123",
+            "id": "sub123",
+            "snippet": {
+                "published_at": datetime.datetime(2024, 1, 15, 12, 0, tzinfo=TzInfo(0)),
+                "title": "Test Channel",
+                "description": "A test channel",
+                "channel_id": "UCuser123",
+                "resource_id": {"kind": "youtube#channel", "channel_id": "UC123"},
+                "thumbnails": {
+                    "default": {"url": "https://example.com/thumb.jpg", "width": 88, "height": 88},
+                    "medium": None,
+                    "high": None,
+                },
+                "channel_title": None,
+            },
+            "content_details": {
+                "total_item_count": 42,
+                "new_item_count": 5,
+                "activity_type": "all",
+            },
+        }
+    )
 
 
 def test_list_subscriptions_handles_pagination(mock_credentials, mock_youtube_resource):
@@ -147,8 +179,57 @@ def test_list_subscriptions_handles_pagination(mock_credentials, mock_youtube_re
         subs = client.list_subscriptions()
 
     assert len(subs) == 2
-    assert subs[0].id == "sub1"
-    assert subs[1].id == "sub2"
+    # Use snapshots for dict representation to avoid Pydantic aliasing issues
+    assert subs[0].model_dump() == snapshot(
+        {
+            "kind": "youtube#subscription",
+            "etag": "etag1",
+            "id": "sub1",
+            "snippet": {
+                "published_at": datetime.datetime(2024, 1, 1, 12, 0, tzinfo=TzInfo(0)),
+                "title": "Channel 1",
+                "description": "First channel",
+                "channel_id": "UCuser1",
+                "resource_id": {"kind": "youtube#channel", "channel_id": "UC1"},
+                "thumbnails": {
+                    "default": {"url": "https://example.com/1.jpg", "width": None, "height": None},
+                    "medium": None,
+                    "high": None,
+                },
+                "channel_title": None,
+            },
+            "content_details": {
+                "total_item_count": 10,
+                "new_item_count": 1,
+                "activity_type": "all",
+            },
+        }
+    )
+    assert subs[1].model_dump() == snapshot(
+        {
+            "kind": "youtube#subscription",
+            "etag": "etag2",
+            "id": "sub2",
+            "snippet": {
+                "published_at": datetime.datetime(2024, 1, 2, 12, 0, tzinfo=TzInfo(0)),
+                "title": "Channel 2",
+                "description": "Second channel",
+                "channel_id": "UCuser2",
+                "resource_id": {"kind": "youtube#channel", "channel_id": "UC2"},
+                "thumbnails": {
+                    "default": {"url": "https://example.com/2.jpg", "width": None, "height": None},
+                    "medium": None,
+                    "high": None,
+                },
+                "channel_title": None,
+            },
+            "content_details": {
+                "total_item_count": 20,
+                "new_item_count": 2,
+                "activity_type": "all",
+            },
+        }
+    )
 
 
 def test_list_subscriptions_handles_empty_response(mock_credentials, mock_youtube_resource):
