@@ -2,8 +2,13 @@
 Tests for Feedbin API client
 """
 
+import base64
+import json
+
+import httpx
 import pytest
 from inline_snapshot import snapshot
+from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
 
 from youtube_sync.io.feedbin.client import FeedbinClient
@@ -35,8 +40,8 @@ def test_list_subscriptions_parses_response(httpx_mock: HTTPXMock):
             id=123,
             feed_id=456,
             title="YouTube - TestChannel",
-            feed_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC123",
-            site_url="https://www.youtube.com/channel/UC123",
+            feed_url=HttpUrl("https://www.youtube.com/feeds/videos.xml?channel_id=UC123"),
+            site_url=HttpUrl("https://www.youtube.com/channel/UC123"),
             created_at="2024-01-15T12:00:00.000000Z",
         )
     )
@@ -119,11 +124,12 @@ def test_create_subscription_sends_correct_payload(httpx_mock: HTTPXMock):
     client.create_subscription("https://example.com/feed.xml")
 
     request = httpx_mock.get_request()
+
+    assert isinstance(request, httpx.Request)
     assert request.method == "POST"
     assert request.headers["Content-Type"] == "application/json; charset=utf-8"
-    # httpx uses read() for streaming bodies, so we need to check the sent data
-    import json
 
+    # httpx uses read() for streaming bodies, so we need to check the sent data
     assert json.loads(request.content) == {"feed_url": "https://example.com/feed.xml"}
 
 
@@ -138,9 +144,9 @@ def test_client_sets_auth_header(httpx_mock: HTTPXMock):
     client.list_subscriptions()
 
     request = httpx_mock.get_request()
-    # httpx encodes basic auth as base64
-    import base64
+    assert isinstance(request, httpx.Request)
 
+    # httpx encodes basic auth as base64
     expected_auth = base64.b64encode(b"myuser:mypass").decode("ascii")
     assert request.headers["Authorization"] == f"Basic {expected_auth}"
 
