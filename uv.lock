@@ -135,6 +135,20 @@ wheels = [
 ]
 
 [[package]]
+name = "google-api-python-client-stubs"
+version = "1.31.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "google-api-python-client" },
+    { name = "types-httplib2" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/56/6a/20282998fc576456c24a34a8fe03fad92d8b3db1ab492bef09f99a9ceadb/google_api_python_client_stubs-1.31.0.tar.gz", hash = "sha256:219e1033dc440f4742008b4f2aab228c77a5175fd5724b5d2763221d3b01199a", size = 2416728, upload-time = "2025-10-31T18:40:53.983Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/ea/7133e60899a198c7cfc99d0a6afe2c39421e8c394a0516e85fdddfc704fc/google_api_python_client_stubs-1.31.0-py3-none-any.whl", hash = "sha256:3cf1c119372c747322bfad75048cdd3159ac53df305804c5dbfa13988b027aa9", size = 3393156, upload-time = "2025-10-31T18:40:52.425Z" },
+]
+
+[[package]]
 name = "google-auth"
 version = "2.41.1"
 source = { registry = "https://pypi.org/simple" }
@@ -575,6 +589,15 @@ wheels = [
 ]
 
 [[package]]
+name = "types-httplib2"
+version = "0.31.0.20250913"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/63/922e6691cd59874ac95e05ffcec594feeae18f3a06c9457805ca48e1e456/types_httplib2-0.31.0.20250913.tar.gz", hash = "sha256:1e2c4f2950e5413198d83b294f9a97a7d6a3ca5ef72cc2df39fb23376c9341b0", size = 10554, upload-time = "2025-09-13T02:39:58.67Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/47/74/022cb5315bb5d61f6cc92cf45809a52ca5fed8dcc6aa28fdabde752c053c/types_httplib2-0.31.0.20250913-py3-none-any.whl", hash = "sha256:27de80fd22141873bcdbd7c1e482393167cffd6dafbd535414434a4c582d5f49", size = 10659, upload-time = "2025-09-13T02:39:57.613Z" },
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.15.0"
 source = { registry = "https://pypi.org/simple" }
@@ -626,6 +649,7 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "google-api-python-client-stubs" },
     { name = "inline-snapshot", extra = ["dirty-equals"] },
     { name = "pytest" },
     { name = "pytest-httpx" },
@@ -643,6 +667,7 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "google-api-python-client-stubs", specifier = ">=1.31.0" },
     { name = "inline-snapshot", extras = ["dirty-equals"], specifier = ">=0.31.1" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-httpx", specifier = ">=0.36.0" },

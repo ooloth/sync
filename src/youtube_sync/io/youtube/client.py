@@ -3,10 +3,13 @@ YouTube Data API client
 https://developers.google.com/youtube/v3/docs
 """
 
+from __future__ import annotations
+
 import json
 import os
 from functools import lru_cache
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -15,6 +18,13 @@ from googleapiclient.discovery import Resource, build
 
 from youtube_sync.io.op.secrets import get_secret
 from youtube_sync.io.youtube.models import YouTubeSubscription
+
+# Type-only import: google-api-python-client-stubs provides accurate types generated from
+# Google's API discovery documents, but these types exist only in .pyi stub files and cannot
+# be imported at runtime. We use TYPE_CHECKING to get proper type safety (method signatures,
+# parameter validation) during type checking while keeping runtime imports clean.
+if TYPE_CHECKING:
+    from googleapiclient._apis.youtube.v3 import YouTubeResource
 
 API_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 
@@ -28,10 +38,7 @@ def _get_tokens_file() -> Path:
     return Path.home() / ".config" / "youtube-sync" / "oauth_tokens.json"
 
 
-def _fetch_new_oauth_tokens(
-    client_config: dict,
-    scopes: list[str] = API_SCOPES,
-) -> Credentials:
+def _fetch_new_oauth_tokens(client_config: dict, scopes: list[str] = API_SCOPES) -> Credentials:
     """
     Fetches new Google Cloud OAuth tokens using client configuration.
 
@@ -48,14 +55,11 @@ def _fetch_new_oauth_tokens(
         raise
 
 
-def _generate_oauth_credentials(
-    client_config: dict,
-    tokens_file: Path,
-) -> Credentials:
+def _generate_oauth_credentials(client_config: dict, tokens_file: Path) -> Credentials:
     """
     Generates OAuth credentials from a saved, refreshed or new access token.
     """
-    credentials = None
+    credentials: Credentials | None = None
 
     print("🥁 Checking for saved tokens...")
 
@@ -69,9 +73,10 @@ def _generate_oauth_credentials(
             credentials = _fetch_new_oauth_tokens(client_config)
     else:
         print("👎 No saved tokens found")
+        credentials = _fetch_new_oauth_tokens(client_config)
 
-    if not credentials or not credentials.valid:
-        if credentials and credentials.expired and credentials.refresh_token:
+    if not credentials.valid:
+        if credentials.expired and credentials.refresh_token:
             try:
                 print("🥁 Refreshing expired access token...")
                 credentials.refresh(Request())
@@ -113,7 +118,7 @@ class YouTubeClient:
     """
 
     def __init__(self, credentials: Credentials):
-        self._youtube: Resource = build(
+        self._youtube: YouTubeResource = build(  # type: ignore[assignment]
             credentials=credentials,
             serviceName="youtube",
             version="v3",
@@ -127,7 +132,9 @@ class YouTubeClient:
             List of subscription resources with channel details
         """
         subscriptions = []
-        request = self._youtube.subscriptions().list(
+        subs_resource = self._youtube.subscriptions()
+
+        request = subs_resource.list(
             part="snippet,contentDetails",
             mine=True,
             maxResults=50,
@@ -137,7 +144,7 @@ class YouTubeClient:
             response = request.execute()
             items = response.get("items", [])
             subscriptions.extend([YouTubeSubscription.model_validate(item) for item in items])
-            request = self._youtube.subscriptions().list_next(request, response)
+            request = subs_resource.list_next(request, response)
 
         return subscriptions
 
