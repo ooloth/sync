@@ -47,7 +47,7 @@ def test_send_message_with_title(httpx_mock: HTTPXMock):
 
     # Verify title was sent in payload
     request = httpx_mock.get_request()
-    assert isinstance(request, httpx.Response)
+    assert isinstance(request, httpx.Request)
     assert b"title=Test+Title" in request.content
 
 
@@ -68,7 +68,7 @@ def test_send_message_with_html(httpx_mock: HTTPXMock):
 
     # Verify html flag was sent
     request = httpx_mock.get_request()
-    assert isinstance(request, httpx.Response)
+    assert isinstance(request, httpx.Request)
     assert b"html=1" in request.content
 
 
@@ -86,7 +86,7 @@ def test_send_message_sends_correct_payload(httpx_mock: HTTPXMock):
     client.send_message("Hello world", title="Greeting", html=True)
 
     request = httpx_mock.get_request()
-    assert isinstance(request, httpx.Response)
+    assert isinstance(request, httpx.Request)
     assert request.method == "POST"
 
     # Verify all required fields in form data
