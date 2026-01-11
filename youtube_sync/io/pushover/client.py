@@ -14,7 +14,25 @@ API_BASE = "https://api.pushover.net/1"
 
 
 class PushoverClient:
-    """Client for Pushover notification API."""
+    """
+    Client for Pushover notification API.
+
+    Usage patterns:
+    1. Via factory (recommended for scripts):
+        client = create_client()
+        client.send_message("Hello")
+
+    2. As context manager (auto-cleanup):
+        with PushoverClient(...) as client:
+            client.send_message("Hello")
+
+    3. Manual cleanup (for long-running apps):
+        client = PushoverClient(...)
+        try:
+            client.send_message("Hello")
+        finally:
+            client.close()
+    """
 
     def __init__(self, app_token: str, user_key: str):
         self._client = httpx.Client(base_url=API_BASE)
@@ -46,13 +64,20 @@ class PushoverClient:
         return PushoverResponse.model_validate(response.json())
 
     def close(self) -> None:
-        """Close the HTTP client."""
+        """
+        Close the HTTP client and release connections.
+
+        Not strictly necessary for short-lived scripts (Python cleans up on exit),
+        but good practice for tests and long-running applications.
+        """
         self._client.close()
 
     def __enter__(self):
+        """Enable 'with' statement usage. Returns self for use in the with block."""
         return self
 
     def __exit__(self, *args):
+        """Called when exiting 'with' block. Ensures cleanup even if exceptions occur."""
         self.close()
 
 

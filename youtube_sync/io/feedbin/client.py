@@ -14,7 +14,25 @@ API_BASE = "https://api.feedbin.com/v2"
 
 
 class FeedbinClient:
-    """Client for Feedbin API operations."""
+    """
+    Client for Feedbin API operations.
+
+    Usage patterns:
+    1. Via factory (recommended for scripts):
+        client = create_client()
+        subs = client.list_subscriptions()
+
+    2. As context manager (auto-cleanup):
+        with FeedbinClient(...) as client:
+            subs = client.list_subscriptions()
+
+    3. Manual cleanup (for long-running apps):
+        client = FeedbinClient(...)
+        try:
+            subs = client.list_subscriptions()
+        finally:
+            client.close()
+    """
 
     def __init__(self, username: str, password: str):
         self._client = httpx.Client(
@@ -36,13 +54,20 @@ class FeedbinClient:
         return FeedbinSubscription.model_validate(response.json())
 
     def close(self) -> None:
-        """Close the HTTP client."""
+        """
+        Close the HTTP client and release connections.
+
+        Not strictly necessary for short-lived scripts (Python cleans up on exit),
+        but good practice for tests and long-running applications.
+        """
         self._client.close()
 
     def __enter__(self):
+        """Enable 'with' statement usage. Returns self for use in the with block."""
         return self
 
     def __exit__(self, *args):
+        """Called when exiting 'with' block. Ensures cleanup even if exceptions occur."""
         self.close()
 
 
