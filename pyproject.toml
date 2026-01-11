@@ -10,6 +10,7 @@ description = "Adds my YouTube subscriptions to Feedbin and my liked videos to N
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "httpx>=0.28.1",
     "pydantic>=2.12.5",
 ]
 
@@ -17,6 +18,7 @@ dependencies = [
 dev = [
     "inline-snapshot[dirty-equals]>=0.31.1",
     "pytest>=9.0.2",
+    "pytest-httpx>=0.36.0",
     "ruff>=0.14.10",
     "ty>=0.0.8",
 ]
