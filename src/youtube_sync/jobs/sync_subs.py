@@ -5,6 +5,7 @@ from result import Err, Ok
 
 from youtube_sync.io.feedbin import create_client as create_feedbin_client
 from youtube_sync.io.youtube import create_client as create_youtube_client
+from youtube_sync.logging import setup_logging
 
 
 def main():
@@ -14,6 +15,7 @@ def main():
         epilog="""
 By default, this runs in DRY-RUN mode and shows what would be created.
 Use --apply to actually create subscriptions in Feedbin.
+Use --verbose to see detailed debug output.
         """,
     )
     parser.add_argument(
@@ -21,7 +23,16 @@ Use --apply to actually create subscriptions in Feedbin.
         action="store_true",
         help="Actually create subscriptions (default is dry-run)",
     )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Show detailed debug output",
+    )
     args = parser.parse_args()
+
+    # Configure logging based on verbosity
+    setup_logging(verbose=args.verbose)
 
     if args.apply:
         rich.print("[bold yellow]⚠️  APPLY MODE - will make real changes[/bold yellow]")
