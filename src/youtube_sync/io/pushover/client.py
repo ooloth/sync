@@ -6,6 +6,7 @@ https://pushover.net/api
 from functools import lru_cache
 
 import httpx
+from result import Err, Ok, Result
 
 from youtube_sync.io.op.secrets import get_secret
 from youtube_sync.io.pushover.models import PushoverResponse
@@ -45,23 +46,37 @@ class PushoverClient:
         *,
         title: str | None = None,
         html: bool = False,
-    ) -> PushoverResponse:
-        """Send a push notification."""
-        payload = {
-            "token": self._app_token,
-            "user": self._user_key,
-            "message": message,
-        }
+    ) -> Result[PushoverResponse, str]:
+        """
+        Send a push notification.
 
-        if title:
-            payload["title"] = title
+        Args:
+            message: The message body
+            title: Optional message title
+            html: Whether to enable HTML formatting
 
-        if html:
-            payload["html"] = 1
+        Returns:
+            Ok with the response, or Err with error message
+        """
+        try:
+            payload = {
+                "token": self._app_token,
+                "user": self._user_key,
+                "message": message,
+            }
 
-        response = self._client.post("/messages.json", data=payload)
-        response.raise_for_status()
-        return PushoverResponse.model_validate(response.json())
+            if title:
+                payload["title"] = title
+
+            if html:
+                payload["html"] = 1
+
+            response = self._client.post("/messages.json", data=payload)
+            response.raise_for_status()
+            pushover_response = PushoverResponse.model_validate(response.json())
+            return Ok(pushover_response)
+        except Exception as e:
+            return Err(f"Failed to send Pushover message: {e}")
 
     def close(self) -> None:
         """
