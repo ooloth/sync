@@ -4,8 +4,4 @@ Adds my YouTube subscriptions to my Feedbin subscriptions and my liked videos to
 
 ## Developing
 
-```sh
-uv run ruff format # check formatting (and auto-fix issues)
-uv run ruff check # check linting
-uv run ty check # check types
-```
+See `justfile` for convenience commands for running jobs and checking quality.
