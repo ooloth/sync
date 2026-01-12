@@ -3,6 +3,7 @@ Feedbin API client
 https://github.com/feedbin/feedbin-api
 """
 
+import logging
 from functools import lru_cache
 
 import httpx
@@ -11,6 +12,8 @@ from result import Err, Ok, Result
 from youtube_sync.io.feedbin.auth import FeedbinAuth, create_auth_from_1password
 from youtube_sync.io.feedbin.models import FeedbinSubscription
 from youtube_sync.types import ErrorMessage
+
+logger = logging.getLogger(__name__)
 
 API_BASE = "https://api.feedbin.com/v2"
 
@@ -51,11 +54,16 @@ class FeedbinClient:
             Ok with list of subscriptions, or Err with error message
         """
         try:
+            logger.debug("GET /subscriptions.json")
             response = self._client.get("/subscriptions.json")
             response.raise_for_status()
+            logger.debug(
+                f"Received {response.status_code} with {len(response.json())} subscriptions"
+            )
             subscriptions = [FeedbinSubscription.model_validate(item) for item in response.json()]
             return Ok(subscriptions)
         except Exception as e:
+            logger.debug(f"Feedbin API error: {e}")
             return Err(f"Failed to list Feedbin subscriptions: {e}")
 
     def create_subscription(self, feed_url: str) -> Result[FeedbinSubscription, ErrorMessage]:
@@ -69,11 +77,14 @@ class FeedbinClient:
             Ok with the created subscription, or Err with error message
         """
         try:
+            logger.debug(f"POST /subscriptions.json with feed_url={feed_url}")
             response = self._client.post("/subscriptions.json", json={"feed_url": feed_url})
             response.raise_for_status()
+            logger.debug(f"Created subscription: {response.status_code}")
             subscription = FeedbinSubscription.model_validate(response.json())
             return Ok(subscription)
         except Exception as e:
+            logger.debug(f"Feedbin API error: {e}")
             return Err(f"Failed to create Feedbin subscription: {e}")
 
     def close(self) -> None:
