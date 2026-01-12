@@ -1,0 +1,5 @@
+# https://docs.astral.sh/ruff/configuration/
+# https://docs.astral.sh/ruff/settings/
+
+line-length = 100
+
