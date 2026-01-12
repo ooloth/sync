@@ -14,6 +14,7 @@ from result import Err, Ok, Result
 
 from youtube_sync.io.youtube.auth import YouTubeAuth, create_auth_from_1password
 from youtube_sync.io.youtube.models import YouTubeSubscription
+from youtube_sync.types import ErrorMessage
 
 # Type-only import: google-api-python-client-stubs provides accurate types generated from
 # Google's API discovery documents, but these types exist only in .pyi stub files and cannot
@@ -51,7 +52,7 @@ class YouTubeClient:
             version="v3",
         )
 
-    def list_subscriptions(self) -> Result[list[YouTubeSubscription], str]:
+    def list_subscriptions(self) -> Result[list[YouTubeSubscription], ErrorMessage]:
         """
         Get all YouTube channel subscriptions.
 

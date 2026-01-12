@@ -10,6 +10,7 @@ from result import Err, Ok, Result
 
 from youtube_sync.io.feedbin.models import FeedbinSubscription
 from youtube_sync.io.op.secrets import get_secret
+from youtube_sync.types import ErrorMessage
 
 API_BASE = "https://api.feedbin.com/v2"
 
@@ -42,7 +43,7 @@ class FeedbinClient:
             headers={"Content-Type": "application/json; charset=utf-8"},
         )
 
-    def list_subscriptions(self) -> Result[list[FeedbinSubscription], str]:
+    def list_subscriptions(self) -> Result[list[FeedbinSubscription], ErrorMessage]:
         """
         Get all subscriptions.
 
@@ -57,7 +58,7 @@ class FeedbinClient:
         except Exception as e:
             return Err(f"Failed to list Feedbin subscriptions: {e}")
 
-    def create_subscription(self, feed_url: str) -> Result[FeedbinSubscription, str]:
+    def create_subscription(self, feed_url: str) -> Result[FeedbinSubscription, ErrorMessage]:
         """
         Create a new subscription.
 

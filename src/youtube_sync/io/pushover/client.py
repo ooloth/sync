@@ -10,6 +10,7 @@ from result import Err, Ok, Result
 
 from youtube_sync.io.op.secrets import get_secret
 from youtube_sync.io.pushover.models import PushoverResponse
+from youtube_sync.types import ErrorMessage
 
 API_BASE = "https://api.pushover.net/1"
 
@@ -46,7 +47,7 @@ class PushoverClient:
         *,
         title: str | None = None,
         html: bool = False,
-    ) -> Result[PushoverResponse, str]:
+    ) -> Result[PushoverResponse, ErrorMessage]:
         """
         Send a push notification.
 
