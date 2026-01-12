@@ -6,16 +6,16 @@ check-fast: format-check lint type-check
 
 # Fix auto-fixable issues
 fix:
-    ruff check --fix .
-    ruff format .
+    uv run ruff check --fix .
+    uv run ruff format .
 
 # Check code formatting
 format-check:
-    ruff format --check .
+    uv run ruff format --check .
 
 # Run linter
 lint:
-    ruff check .
+    uv run ruff check .
 
 # Run type checker
 type-check:
