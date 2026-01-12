@@ -9,7 +9,13 @@ def main():
 
     rich.print("\n[bold]Fetching YouTube subscriptions[/bold]")
     youtube = create_youtube_client()
-    yt_subs = youtube.list_subscriptions()
+    yt_result = youtube.list_subscriptions()
+
+    if yt_result.is_err():
+        rich.print(f"[red]Error:[/red] {yt_result.err_value}")
+        return
+
+    yt_subs = yt_result.ok_value
     yt_count = len(yt_subs)
     rich.print(f"Total YouTube subscriptions: {yt_count}")
 
@@ -23,7 +29,13 @@ def main():
 
     rich.print("\n[bold]Fetching Feedbin subscriptions[/bold]")
     feedbin = create_feedbin_client()
-    fb_subs = feedbin.list_subscriptions()
+    fb_result = feedbin.list_subscriptions()
+
+    if fb_result.is_err():
+        rich.print(f"[red]Error:[/red] {fb_result.err_value}")
+        return
+
+    fb_subs = fb_result.ok_value
     fb_count = len(fb_subs)
     rich.print(f"Total Feedbin subscriptions: {fb_count}")
 
