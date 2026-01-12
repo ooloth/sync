@@ -6,6 +6,7 @@ https://github.com/feedbin/feedbin-api
 from functools import lru_cache
 
 import httpx
+from result import Err, Ok, Result
 
 from youtube_sync.io.feedbin.models import FeedbinSubscription
 from youtube_sync.io.op.secrets import get_secret
@@ -41,17 +42,38 @@ class FeedbinClient:
             headers={"Content-Type": "application/json; charset=utf-8"},
         )
 
-    def list_subscriptions(self) -> list[FeedbinSubscription]:
-        """Get all subscriptions."""
-        response = self._client.get("/subscriptions.json")
-        response.raise_for_status()
-        return [FeedbinSubscription.model_validate(item) for item in response.json()]
+    def list_subscriptions(self) -> Result[list[FeedbinSubscription], str]:
+        """
+        Get all subscriptions.
 
-    def create_subscription(self, feed_url: str) -> FeedbinSubscription:
-        """Create a new subscription."""
-        response = self._client.post("/subscriptions.json", json={"feed_url": feed_url})
-        response.raise_for_status()
-        return FeedbinSubscription.model_validate(response.json())
+        Returns:
+            Ok with list of subscriptions, or Err with error message
+        """
+        try:
+            response = self._client.get("/subscriptions.json")
+            response.raise_for_status()
+            subscriptions = [FeedbinSubscription.model_validate(item) for item in response.json()]
+            return Ok(subscriptions)
+        except Exception as e:
+            return Err(f"Failed to list Feedbin subscriptions: {e}")
+
+    def create_subscription(self, feed_url: str) -> Result[FeedbinSubscription, str]:
+        """
+        Create a new subscription.
+
+        Args:
+            feed_url: The URL of the feed to subscribe to
+
+        Returns:
+            Ok with the created subscription, or Err with error message
+        """
+        try:
+            response = self._client.post("/subscriptions.json", json={"feed_url": feed_url})
+            response.raise_for_status()
+            subscription = FeedbinSubscription.model_validate(response.json())
+            return Ok(subscription)
+        except Exception as e:
+            return Err(f"Failed to create Feedbin subscription: {e}")
 
     def close(self) -> None:
         """

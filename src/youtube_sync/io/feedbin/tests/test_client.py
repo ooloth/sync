@@ -6,10 +6,10 @@ import base64
 import json
 
 import httpx
-import pytest
 from inline_snapshot import snapshot
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
+from result import Err, Ok
 
 from youtube_sync.io.feedbin import FeedbinClient, FeedbinSubscription
 
@@ -31,8 +31,10 @@ def test_list_subscriptions_parses_response(httpx_mock: HTTPXMock):
     )
 
     client = FeedbinClient(username="test", password="test")
-    subs = client.list_subscriptions()
+    result = client.list_subscriptions()
 
+    assert isinstance(result, Ok)
+    subs = result.ok_value
     assert len(subs) == 1
     assert subs[0] == snapshot(
         FeedbinSubscription(
@@ -54,9 +56,10 @@ def test_list_subscriptions_handles_empty_list(httpx_mock: HTTPXMock):
     )
 
     client = FeedbinClient(username="test", password="test")
-    subs = client.list_subscriptions()
+    result = client.list_subscriptions()
 
-    assert subs == []
+    assert isinstance(result, Ok)
+    assert result.ok_value == []
 
 
 def test_list_subscriptions_handles_null_site_url(httpx_mock: HTTPXMock):
@@ -76,8 +79,10 @@ def test_list_subscriptions_handles_null_site_url(httpx_mock: HTTPXMock):
     )
 
     client = FeedbinClient(username="test", password="test")
-    subs = client.list_subscriptions()
+    result = client.list_subscriptions()
 
+    assert isinstance(result, Ok)
+    subs = result.ok_value
     assert len(subs) == 1
     assert subs[0] == snapshot(
         FeedbinSubscription(
@@ -106,8 +111,10 @@ def test_create_subscription_returns_parsed_model(httpx_mock: HTTPXMock):
     )
 
     client = FeedbinClient(username="test", password="test")
-    sub = client.create_subscription("https://example.com/feed.xml")
+    result = client.create_subscription("https://example.com/feed.xml")
 
+    assert isinstance(result, Ok)
+    sub = result.ok_value
     assert sub == snapshot(
         FeedbinSubscription(
             id=789,
@@ -135,7 +142,8 @@ def test_create_subscription_sends_correct_payload(httpx_mock: HTTPXMock):
     )
 
     client = FeedbinClient(username="test", password="test")
-    client.create_subscription("https://example.com/feed.xml")
+    result = client.create_subscription("https://example.com/feed.xml")
+    assert isinstance(result, Ok)
 
     request = httpx_mock.get_request()
 
@@ -155,7 +163,8 @@ def test_client_sets_auth_header(httpx_mock: HTTPXMock):
     )
 
     client = FeedbinClient(username="myuser", password="mypass")
-    client.list_subscriptions()
+    result = client.list_subscriptions()
+    assert isinstance(result, Ok)
 
     request = httpx_mock.get_request()
     assert isinstance(request, httpx.Request)
@@ -165,8 +174,8 @@ def test_client_sets_auth_header(httpx_mock: HTTPXMock):
     assert request.headers["Authorization"] == f"Basic {expected_auth}"
 
 
-def test_client_raises_on_http_error(httpx_mock: HTTPXMock):
-    """Verify client raises exception on HTTP errors."""
+def test_client_returns_err_on_http_error(httpx_mock: HTTPXMock):
+    """Verify client returns Err on HTTP errors."""
     httpx_mock.add_response(
         url="https://api.feedbin.com/v2/subscriptions.json",
         status_code=401,
@@ -174,9 +183,10 @@ def test_client_raises_on_http_error(httpx_mock: HTTPXMock):
     )
 
     client = FeedbinClient(username="wrong", password="wrong")
+    result = client.list_subscriptions()
 
-    with pytest.raises(Exception):  # httpx.HTTPStatusError
-        client.list_subscriptions()
+    assert isinstance(result, Err)
+    assert "Failed to list Feedbin subscriptions" in result.err_value
 
 
 def test_client_context_manager():
