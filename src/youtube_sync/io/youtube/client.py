@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+from result import Err, Ok, Result
 
 from youtube_sync.io.youtube.auth import YouTubeAuth, create_auth_from_1password
 from youtube_sync.io.youtube.models import YouTubeSubscription
@@ -50,29 +51,32 @@ class YouTubeClient:
             version="v3",
         )
 
-    def list_subscriptions(self) -> list[YouTubeSubscription]:
+    def list_subscriptions(self) -> Result[list[YouTubeSubscription], str]:
         """
         Get all YouTube channel subscriptions.
 
         Returns:
-            List of subscription resources with channel details
+            Ok with list of subscription resources, or Err with error message
         """
-        subscriptions = []
-        subs_resource = self._youtube.subscriptions()
+        try:
+            subscriptions = []
+            subs_resource = self._youtube.subscriptions()
 
-        request = subs_resource.list(
-            part="snippet,contentDetails",
-            mine=True,
-            maxResults=50,
-        )
+            request = subs_resource.list(
+                part="snippet,contentDetails",
+                mine=True,
+                maxResults=50,
+            )
 
-        while request is not None:
-            response = request.execute()
-            items = response.get("items", [])
-            subscriptions.extend([YouTubeSubscription.model_validate(item) for item in items])
-            request = subs_resource.list_next(request, response)
+            while request is not None:
+                response = request.execute()
+                items = response.get("items", [])
+                subscriptions.extend([YouTubeSubscription.model_validate(item) for item in items])
+                request = subs_resource.list_next(request, response)
 
-        return subscriptions
+            return Ok(subscriptions)
+        except Exception as e:
+            return Err(f"Failed to list YouTube subscriptions: {e}")
 
     def close(self) -> None:
         """

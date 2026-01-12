@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 import pytest
 from inline_snapshot import snapshot
 from pydantic_core import TzInfo
+from result import Ok
 
 from youtube_sync.io.youtube import YouTubeAuth, YouTubeClient, YouTubeSubscription, create_client
 
@@ -87,8 +88,10 @@ def test_list_subscriptions_handles_single_page(mock_credentials, mock_youtube_r
 
     with patch("youtube_sync.io.youtube.client.build", return_value=mock_youtube_resource):
         client = YouTubeClient(mock_credentials)
-        subs = client.list_subscriptions()
+        result = client.list_subscriptions()
 
+    assert isinstance(result, Ok)
+    subs = result.ok_value
     assert len(subs) == 1
     assert isinstance(subs[0], YouTubeSubscription)
     # Use snapshot for the subscription object to ensure complete validation
@@ -174,8 +177,10 @@ def test_list_subscriptions_handles_pagination(mock_credentials, mock_youtube_re
 
     with patch("youtube_sync.io.youtube.client.build", return_value=mock_youtube_resource):
         client = YouTubeClient(mock_credentials)
-        subs = client.list_subscriptions()
+        result = client.list_subscriptions()
 
+    assert isinstance(result, Ok)
+    subs = result.ok_value
     assert len(subs) == 2
     # Use snapshots for dict representation to avoid Pydantic aliasing issues
     assert subs[0].model_dump() == snapshot(
@@ -243,8 +248,10 @@ def test_list_subscriptions_handles_empty_response(mock_credentials, mock_youtub
 
     with patch("youtube_sync.io.youtube.client.build", return_value=mock_youtube_resource):
         client = YouTubeClient(mock_credentials)
-        subs = client.list_subscriptions()
+        result = client.list_subscriptions()
 
+    assert isinstance(result, Ok)
+    subs = result.ok_value
     assert len(subs) == 0
 
 
@@ -261,7 +268,8 @@ def test_list_subscriptions_requests_correct_parameters(mock_credentials, mock_y
 
     with patch("youtube_sync.io.youtube.client.build", return_value=mock_youtube_resource):
         client = YouTubeClient(mock_credentials)
-        client.list_subscriptions()
+        result = client.list_subscriptions()
+        assert isinstance(result, Ok)
 
     mock_subs_resource.list.assert_called_once_with(
         part="snippet,contentDetails",
