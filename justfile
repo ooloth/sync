@@ -4,6 +4,10 @@ check: format-check lint type-check test
 
 check-fast: format-check lint type-check
 
+# Validate dev environment setup
+doctor:
+    uv run python scripts/doctor.py
+
 fix:
     uv run ruff check --fix .
     uv run ruff format .
