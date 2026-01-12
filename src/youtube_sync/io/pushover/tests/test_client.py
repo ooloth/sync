@@ -7,7 +7,7 @@ from inline_snapshot import snapshot
 from pytest_httpx import HTTPXMock
 from result import Err, Ok
 
-from youtube_sync.io.pushover import PushoverClient, PushoverResponse
+from youtube_sync.io.pushover import PushoverAuth, PushoverClient, PushoverResponse
 
 
 def test_send_message_basic(httpx_mock: HTTPXMock):
@@ -20,7 +20,7 @@ def test_send_message_basic(httpx_mock: HTTPXMock):
         },
     )
 
-    client = PushoverClient(app_token="test_app", user_key="test_user")
+    client = PushoverClient(PushoverAuth("test_app", "test_user"))
     result = client.send_message("Test message")
 
     assert isinstance(result, Ok)
@@ -44,7 +44,7 @@ def test_send_message_with_title(httpx_mock: HTTPXMock):
         },
     )
 
-    client = PushoverClient(app_token="test_app", user_key="test_user")
+    client = PushoverClient(PushoverAuth("test_app", "test_user"))
     result = client.send_message("Message body", title="Test Title")
 
     assert isinstance(result, Ok)
@@ -67,7 +67,7 @@ def test_send_message_with_html(httpx_mock: HTTPXMock):
         },
     )
 
-    client = PushoverClient(app_token="test_app", user_key="test_user")
+    client = PushoverClient(PushoverAuth("test_app", "test_user"))
     result = client.send_message("<b>Bold text</b>", html=True)
 
     assert isinstance(result, Ok)
@@ -90,7 +90,7 @@ def test_send_message_sends_correct_payload(httpx_mock: HTTPXMock):
         },
     )
 
-    client = PushoverClient(app_token="my_app_token", user_key="my_user_key")
+    client = PushoverClient(PushoverAuth("my_app_token", "my_user_key"))
     result = client.send_message("Hello world", title="Greeting", html=True)
     assert isinstance(result, Ok)
 
@@ -117,7 +117,7 @@ def test_send_message_parses_response(httpx_mock: HTTPXMock):
         },
     )
 
-    client = PushoverClient(app_token="test_app", user_key="test_user")
+    client = PushoverClient(PushoverAuth("test_app", "test_user"))
     result = client.send_message("Test")
 
     assert isinstance(result, Ok)
@@ -142,7 +142,7 @@ def test_send_message_handles_error_response(httpx_mock: HTTPXMock):
         },
     )
 
-    client = PushoverClient(app_token="bad_token", user_key="bad_user")
+    client = PushoverClient(PushoverAuth("bad_token", "bad_user"))
     result = client.send_message("Test")
 
     assert isinstance(result, Ok)
@@ -167,7 +167,7 @@ def test_client_returns_err_on_http_error(httpx_mock: HTTPXMock):
         },
     )
 
-    client = PushoverClient(app_token="invalid", user_key="test_user")
+    client = PushoverClient(PushoverAuth("invalid", "test_user"))
     result = client.send_message("Test")
 
     assert isinstance(result, Err)
@@ -176,7 +176,7 @@ def test_client_returns_err_on_http_error(httpx_mock: HTTPXMock):
 
 def test_client_context_manager():
     """Verify client works as context manager."""
-    with PushoverClient(app_token="test_app", user_key="test_user") as client:
+    with PushoverClient(PushoverAuth("test_app", "test_user")) as client:
         assert client._client is not None
         assert not client._client.is_closed
 

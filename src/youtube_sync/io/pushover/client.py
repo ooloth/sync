@@ -8,7 +8,7 @@ from functools import lru_cache
 import httpx
 from result import Err, Ok, Result
 
-from youtube_sync.io.op.secrets import get_secret
+from youtube_sync.io.pushover.auth import PushoverAuth, create_auth_from_1password
 from youtube_sync.io.pushover.models import PushoverResponse
 from youtube_sync.types import ErrorMessage
 
@@ -36,10 +36,10 @@ class PushoverClient:
             client.close()
     """
 
-    def __init__(self, app_token: str, user_key: str):
+    def __init__(self, auth: PushoverAuth):
         self._client = httpx.Client(base_url=API_BASE)
-        self._app_token = app_token
-        self._user_key = user_key
+        self._app_token = auth.app_token
+        self._user_key = auth.user_key
 
     def send_message(
         self,
@@ -98,22 +98,16 @@ class PushoverClient:
 
 
 @lru_cache
-def create_client(
-    app_token: str | None = None,
-    user_key: str | None = None,
-) -> PushoverClient:
+def create_client(auth: PushoverAuth | None = None) -> PushoverClient:
     """
     Create a Pushover client with credentials.
 
     Args:
-        app_token: Optional Pushover app token. If None, fetches from 1Password.
-        user_key: Optional Pushover user key. If None, fetches from 1Password.
+        auth: Optional PushoverAuth instance. If None, creates one using 1Password credentials.
 
     Returns:
         Configured PushoverClient ready for sending notifications
     """
-    if app_token is None:
-        app_token = get_secret("Pushover", "app: scripts repo")
-    if user_key is None:
-        user_key = get_secret("Pushover", "user key")
-    return PushoverClient(app_token, user_key)
+    if auth is None:
+        auth = create_auth_from_1password()
+    return PushoverClient(auth)
