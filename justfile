@@ -1,3 +1,5 @@
+# https://just.systems/man/en/introduction.html
+
 check: format-check lint type-check test
 
 check-fast: format-check lint type-check
