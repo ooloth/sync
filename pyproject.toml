@@ -30,9 +30,3 @@ dev = [
     "ruff>=0.14.10",
     "ty>=0.0.8",
 ]
-
-# uv run sync-likes
-# uv run sync-subs
-[project.scripts]
-sync-likes = "youtube_sync.jobs.sync_likes:main"
-sync-subs = "youtube_sync.jobs.sync_subs:main"
