@@ -5,6 +5,7 @@ https://developers.google.com/youtube/v3/docs
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from google.oauth2.credentials import Credentials
@@ -91,6 +92,7 @@ class YouTubeClient:
         self.close()
 
 
+@lru_cache
 def create_client(auth: YouTubeAuth | None = None) -> YouTubeClient:
     """
     Create a YouTube client with OAuth credentials.
