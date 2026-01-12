@@ -4,8 +4,8 @@ check: format-check lint type-check test
 
 check-fast: format-check lint type-check
 
-# Validate dev environment setup
 doctor:
+    # Validate dev environment setup
     uv run python scripts/doctor.py
 
 fix:
@@ -38,3 +38,6 @@ sync-subs:
 
 sync-subs-apply:
     uv run python -m youtube_sync.jobs.sync_subs --apply
+
+sync-subs-verbose:
+    uv run python -m youtube_sync.jobs.sync_subs --verbose
