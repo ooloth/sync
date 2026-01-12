@@ -11,8 +11,7 @@ from inline_snapshot import snapshot
 from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
 
-from youtube_sync.io.feedbin.client import FeedbinClient
-from youtube_sync.io.feedbin.models import FeedbinSubscription
+from youtube_sync.io.feedbin import FeedbinClient, FeedbinSubscription
 
 
 def test_list_subscriptions_parses_response(httpx_mock: HTTPXMock):

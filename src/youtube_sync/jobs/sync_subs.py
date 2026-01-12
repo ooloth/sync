@@ -1,7 +1,7 @@
 import rich
 
-from youtube_sync.io.feedbin.client import create_client as create_feedbin_client
-from youtube_sync.io.youtube.client import create_client as create_youtube_client
+from youtube_sync.io.feedbin import create_client as create_feedbin_client
+from youtube_sync.io.youtube import create_client as create_youtube_client
 
 
 def main():

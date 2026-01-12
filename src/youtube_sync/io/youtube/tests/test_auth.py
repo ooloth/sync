@@ -10,13 +10,12 @@ from unittest.mock import Mock, patch
 import pytest
 from google.oauth2.credentials import Credentials
 
+from youtube_sync.io.youtube import YouTubeAuth, create_auth_from_1password
 from youtube_sync.io.youtube.auth import (
     API_SCOPES,
-    YouTubeAuth,
     _cache_access_token,
     _fetch_new_oauth_tokens,
     _get_tokens_file,
-    create_auth_from_1password,
 )
 
 

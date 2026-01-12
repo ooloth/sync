@@ -7,8 +7,7 @@ import pytest
 from inline_snapshot import snapshot
 from pytest_httpx import HTTPXMock
 
-from youtube_sync.io.pushover.client import PushoverClient
-from youtube_sync.io.pushover.models import PushoverResponse
+from youtube_sync.io.pushover import PushoverClient, PushoverResponse
 
 
 def test_send_message_basic(httpx_mock: HTTPXMock):

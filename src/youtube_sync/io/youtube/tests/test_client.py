@@ -9,9 +9,7 @@ import pytest
 from inline_snapshot import snapshot
 from pydantic_core import TzInfo
 
-from youtube_sync.io.youtube.auth import YouTubeAuth
-from youtube_sync.io.youtube.client import YouTubeClient, create_client
-from youtube_sync.io.youtube.models import YouTubeSubscription
+from youtube_sync.io.youtube import YouTubeAuth, YouTubeClient, YouTubeSubscription, create_client
 
 
 @pytest.fixture
