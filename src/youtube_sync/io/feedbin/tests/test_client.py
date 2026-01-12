@@ -11,7 +11,7 @@ from pydantic import HttpUrl
 from pytest_httpx import HTTPXMock
 from result import Err, Ok
 
-from youtube_sync.io.feedbin import FeedbinClient, FeedbinSubscription
+from youtube_sync.io.feedbin import FeedbinAuth, FeedbinClient, FeedbinSubscription
 
 
 def test_list_subscriptions_parses_response(httpx_mock: HTTPXMock):
@@ -30,7 +30,7 @@ def test_list_subscriptions_parses_response(httpx_mock: HTTPXMock):
         ],
     )
 
-    client = FeedbinClient(username="test", password="test")
+    client = FeedbinClient(FeedbinAuth("test", "test"))
     result = client.list_subscriptions()
 
     assert isinstance(result, Ok)
@@ -55,7 +55,7 @@ def test_list_subscriptions_handles_empty_list(httpx_mock: HTTPXMock):
         json=[],
     )
 
-    client = FeedbinClient(username="test", password="test")
+    client = FeedbinClient(FeedbinAuth("test", "test"))
     result = client.list_subscriptions()
 
     assert isinstance(result, Ok)
@@ -78,7 +78,7 @@ def test_list_subscriptions_handles_null_site_url(httpx_mock: HTTPXMock):
         ],
     )
 
-    client = FeedbinClient(username="test", password="test")
+    client = FeedbinClient(FeedbinAuth("test", "test"))
     result = client.list_subscriptions()
 
     assert isinstance(result, Ok)
@@ -110,7 +110,7 @@ def test_create_subscription_returns_parsed_model(httpx_mock: HTTPXMock):
         },
     )
 
-    client = FeedbinClient(username="test", password="test")
+    client = FeedbinClient(FeedbinAuth("test", "test"))
     result = client.create_subscription("https://example.com/feed.xml")
 
     assert isinstance(result, Ok)
@@ -141,7 +141,7 @@ def test_create_subscription_sends_correct_payload(httpx_mock: HTTPXMock):
         },
     )
 
-    client = FeedbinClient(username="test", password="test")
+    client = FeedbinClient(FeedbinAuth("test", "test"))
     result = client.create_subscription("https://example.com/feed.xml")
     assert isinstance(result, Ok)
 
@@ -162,7 +162,7 @@ def test_client_sets_auth_header(httpx_mock: HTTPXMock):
         json=[],
     )
 
-    client = FeedbinClient(username="myuser", password="mypass")
+    client = FeedbinClient(FeedbinAuth("myuser", "mypass"))
     result = client.list_subscriptions()
     assert isinstance(result, Ok)
 
@@ -182,7 +182,7 @@ def test_client_returns_err_on_http_error(httpx_mock: HTTPXMock):
         json={"error": "Unauthorized"},
     )
 
-    client = FeedbinClient(username="wrong", password="wrong")
+    client = FeedbinClient(FeedbinAuth("wrong", "wrong"))
     result = client.list_subscriptions()
 
     assert isinstance(result, Err)
@@ -191,7 +191,7 @@ def test_client_returns_err_on_http_error(httpx_mock: HTTPXMock):
 
 def test_client_context_manager():
     """Verify client works as context manager."""
-    with FeedbinClient(username="test", password="test") as client:
+    with FeedbinClient(FeedbinAuth("test", "test")) as client:
         assert client._client is not None
         assert not client._client.is_closed
 

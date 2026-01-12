@@ -8,8 +8,8 @@ from functools import lru_cache
 import httpx
 from result import Err, Ok, Result
 
+from youtube_sync.io.feedbin.auth import FeedbinAuth, create_auth_from_1password
 from youtube_sync.io.feedbin.models import FeedbinSubscription
-from youtube_sync.io.op.secrets import get_secret
 from youtube_sync.types import ErrorMessage
 
 API_BASE = "https://api.feedbin.com/v2"
@@ -36,10 +36,10 @@ class FeedbinClient:
             client.close()
     """
 
-    def __init__(self, username: str, password: str):
+    def __init__(self, auth: FeedbinAuth):
         self._client = httpx.Client(
             base_url=API_BASE,
-            auth=(username, password),
+            auth=(auth.username, auth.password),
             headers={"Content-Type": "application/json; charset=utf-8"},
         )
 
@@ -95,22 +95,16 @@ class FeedbinClient:
 
 
 @lru_cache
-def create_client(
-    username: str | None = None,
-    password: str | None = None,
-) -> FeedbinClient:
+def create_client(auth: FeedbinAuth | None = None) -> FeedbinClient:
     """
     Create a Feedbin client with credentials.
 
     Args:
-        username: Optional Feedbin username. If None, fetches from 1Password.
-        password: Optional Feedbin password. If None, fetches from 1Password.
+        auth: Optional FeedbinAuth instance. If None, creates one using 1Password credentials.
 
     Returns:
         Configured FeedbinClient ready for API calls
     """
-    if username is None:
-        username = get_secret("Feedbin API", "username")
-    if password is None:
-        password = get_secret("Feedbin API", "password")
-    return FeedbinClient(username, password)
+    if auth is None:
+        auth = create_auth_from_1password()
+    return FeedbinClient(auth)
