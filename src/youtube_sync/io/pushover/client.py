@@ -82,8 +82,22 @@ class PushoverClient:
 
 
 @lru_cache
-def create_client() -> PushoverClient:
-    """Create a Pushover client with credentials from 1Password."""
-    app_token = get_secret("Pushover", "app: scripts repo")
-    user_key = get_secret("Pushover", "user key")
+def create_client(
+    app_token: str | None = None,
+    user_key: str | None = None,
+) -> PushoverClient:
+    """
+    Create a Pushover client with credentials.
+
+    Args:
+        app_token: Optional Pushover app token. If None, fetches from 1Password.
+        user_key: Optional Pushover user key. If None, fetches from 1Password.
+
+    Returns:
+        Configured PushoverClient ready for sending notifications
+    """
+    if app_token is None:
+        app_token = get_secret("Pushover", "app: scripts repo")
+    if user_key is None:
+        user_key = get_secret("Pushover", "user key")
     return PushoverClient(app_token, user_key)
