@@ -5,6 +5,7 @@ https://developers.google.com/youtube/v3/docs
 
 from __future__ import annotations
 
+import logging
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
@@ -15,6 +16,8 @@ from result import Err, Ok, Result
 from youtube_sync.io.youtube.auth import YouTubeAuth, create_auth_from_1password
 from youtube_sync.io.youtube.models import YouTubeSubscription
 from youtube_sync.types import ErrorMessage
+
+logger = logging.getLogger(__name__)
 
 # Type-only import: google-api-python-client-stubs provides accurate types generated from
 # Google's API discovery documents, but these types exist only in .pyi stub files and cannot
@@ -60,6 +63,7 @@ class YouTubeClient:
             Ok with list of subscription resources, or Err with error message
         """
         try:
+            logger.debug("Fetching YouTube subscriptions")
             subscriptions = []
             subs_resource = self._youtube.subscriptions()
 
@@ -69,14 +73,20 @@ class YouTubeClient:
                 maxResults=50,
             )
 
+            page = 1
             while request is not None:
+                logger.debug(f"Fetching page {page} of YouTube subscriptions")
                 response = request.execute()
                 items = response.get("items", [])
+                logger.debug(f"Received {len(items)} subscriptions on page {page}")
                 subscriptions.extend([YouTubeSubscription.model_validate(item) for item in items])
                 request = subs_resource.list_next(request, response)
+                page += 1
 
+            logger.debug(f"Total YouTube subscriptions fetched: {len(subscriptions)}")
             return Ok(subscriptions)
         except Exception as e:
+            logger.debug(f"YouTube API error: {e}")
             return Err(f"Failed to list YouTube subscriptions: {e}")
 
     def close(self) -> None:
