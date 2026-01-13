@@ -33,7 +33,7 @@ Use --verbose to see detailed debug output.
     args = parser.parse_args()
 
     # Configure logging based on verbosity
-    setup_logging(verbose=args.verbose)
+    setup_logging(verbose=args.verbose, job_name="sync_subs")
 
     if args.apply:
         log.warning("APPLY MODE - will make real changes", mode="apply")

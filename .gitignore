@@ -3,4 +3,5 @@ __pycache__/
 
 # Mine
 .beads/
+.logs/
 .secrets/

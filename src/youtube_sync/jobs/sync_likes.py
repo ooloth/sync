@@ -17,7 +17,7 @@ def main():
     )
     args = parser.parse_args()
 
-    setup_logging(verbose=args.verbose)
+    setup_logging(verbose=args.verbose, job_name="sync_likes")
 
     log.info("sync started", sync_type="likes")
     log.warning("not yet implemented - coming soon!")
