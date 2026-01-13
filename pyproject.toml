@@ -31,3 +31,10 @@ dev = [
     "ruff>=0.14.10",
     "ty>=0.0.8",
 ]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    # httplib2 uses deprecated pyparsing methods - waiting for upstream fix
+    # See: https://github.com/httplib2/httplib2/issues/
+    "ignore::DeprecationWarning:httplib2.auth",
+]
