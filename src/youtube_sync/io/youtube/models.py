@@ -5,7 +5,7 @@ https://developers.google.com/youtube/v3/docs/subscriptions
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class ThumbnailDetails(BaseModel):
@@ -54,11 +54,10 @@ class ContentDetails(BaseModel):
 class YouTubeSubscription(BaseModel):
     """YouTube subscription resource."""
 
+    model_config = ConfigDict(populate_by_name=True)
+
     kind: str
     etag: str
     id: str
     snippet: SubscriptionSnippet
     content_details: ContentDetails | None = Field(None, alias="contentDetails")
-
-    class Config:
-        populate_by_name = True
