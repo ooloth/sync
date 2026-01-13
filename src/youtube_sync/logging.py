@@ -256,6 +256,22 @@ def _setup_file_logging(log_level: int, job_name: str | None, strip_logger_prefi
     warning_handler.setFormatter(logfmt_formatter)
     root_logger.addHandler(warning_handler)
 
+    # Write divider to separate runs in log files
+    import datetime
+
+    divider = f"\n{'=' * 80}\n"
+    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    run_marker = f"Run started: {timestamp}\n{'=' * 80}\n"
+
+    # Write to each file handler
+    if job_name:
+        with open(logs_dir / f"{job_name}.log", "a") as f:
+            f.write(divider)
+    with open(logs_dir / "errors.log", "a") as f:
+        f.write(divider)
+    with open(logs_dir / "warnings.log", "a") as f:
+        f.write(divider)
+
 
 def get_logger(name: str) -> BoundLogger:
     """
