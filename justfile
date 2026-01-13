@@ -4,6 +4,9 @@ check: format-check lint type-check test
 
 check-fast: format-check lint type-check
 
+dev:
+    uv run pytest-watcher --now --clear src
+
 doctor:
     # Validate dev environment setup
     uv run python scripts/doctor.py
@@ -29,9 +32,6 @@ test-verbose:
 
 test-coverage:
     uv run pytest --cov=src/youtube_sync --cov-report=term-missing
-
-test-watch:
-    uv run pytest-watcher
 
 sync-subs:
     uv run python -m youtube_sync.jobs.sync_subs
