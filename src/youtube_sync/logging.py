@@ -1,15 +1,13 @@
 """Logging configuration for youtube-sync."""
 
-import json
 import logging
 import sys
 from pathlib import Path
 
 import structlog
-from structlog.stdlib import BoundLogger
-
 from rich.console import Console
 from rich.traceback import install as install_rich_traceback
+from structlog.stdlib import BoundLogger
 
 
 def setup_logging(verbose: bool = False, job_name: str | None = None) -> None:
@@ -103,12 +101,14 @@ def setup_logging(verbose: bool = False, job_name: str | None = None) -> None:
 
 def _setup_file_logging(log_level: int, job_name: str | None) -> None:
     """
-    Setup JSON file logging with separate files for different log levels.
+    Setup logfmt-style file logging with separate files for different log levels.
 
     Files created in .logs/:
-    - {job_name}.jsonl - All logs for this specific job
-    - errors.jsonl - All ERROR+ logs from any job
-    - warnings.jsonl - Only WARNING logs (not ERROR) from any job
+    - {job_name}.log - All logs for this specific job
+    - errors.log - All ERROR+ logs from any job
+    - warnings.log - Only WARNING logs (not ERROR) from any job
+
+    Format: timestamp [LEVEL  ] message  key1=value1 key2=value2
     """
     # Create logs directory
     logs_dir = Path(".logs")
@@ -117,11 +117,92 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
     # Get root logger for file handlers
     root_logger = logging.getLogger()
 
-    # JSON formatter using structlog's stdlib integration
-    json_formatter = structlog.stdlib.ProcessorFormatter(
+    # Custom logfmt formatter for human-readable structured logs
+    class LogfmtFormatter(logging.Formatter):
+        """Format logs in logfmt style: timestamp [LEVEL] message key=value"""
+
+        # Pad levels to consistent width
+        LEVEL_NAMES = {
+            "DEBUG": "DEBUG  ",
+            "INFO": "INFO   ",
+            "WARNING": "WARNING",
+            "ERROR": "ERROR  ",
+            "CRITICAL": "CRITICAL",
+        }
+
+        def format(self, record: logging.LogRecord) -> str:
+            # Get timestamp
+            timestamp = self.formatTime(record, datefmt="%Y-%m-%dT%H:%M:%S")
+
+            # Get padded level
+            level = self.LEVEL_NAMES.get(record.levelname, record.levelname)
+
+            # Get message
+            message = record.getMessage()
+
+            # Get structured data from structlog
+            extra_data = {}
+            if hasattr(record, "_from_structlog"):
+                # Extract key=value pairs from structlog context
+                event_dict = getattr(record, "_event_dict", {})
+                # Remove standard fields we're already displaying
+                extra_data = {
+                    k: v
+                    for k, v in event_dict.items()
+                    if k not in ("event", "level", "timestamp", "logger")
+                }
+
+            # Format key=value pairs
+            kv_pairs = " ".join(
+                f"{k}={v!r}" if isinstance(v, str) else f"{k}={v}" for k, v in extra_data.items()
+            )
+
+            # Combine: timestamp [LEVEL] message  key=value key=value
+            parts = [timestamp, f"[{level}]", message]
+            if kv_pairs:
+                parts.append(" ")
+                parts.append(kv_pairs)
+
+            return "".join(parts)
+
+    # Custom processor to format logs in human-readable style
+    def human_readable_formatter(_, __, event_dict):
+        """Format logs as: timestamp [LEVEL] message  key=value key=value"""
+        # Extract main fields
+        timestamp = event_dict.pop("timestamp", "")
+        level = event_dict.pop("level", "").upper()
+        event = event_dict.pop("event", "")
+        logger = event_dict.pop("logger", "")
+
+        # Pad level to consistent width
+        level_padded = {
+            "DEBUG": "DEBUG  ",
+            "INFO": "INFO   ",
+            "WARNING": "WARNING",
+            "ERROR": "ERROR  ",
+            "CRITICAL": "CRITICAL",
+        }.get(level, level)
+
+        # Format remaining key=value pairs
+        kv_pairs = " ".join(
+            f"{k}={v!r}" if isinstance(v, str) else f"{k}={v}"
+            for k, v in event_dict.items()
+        )
+
+        # Build final string
+        parts = [timestamp, f" [{level_padded}]", f" {event}"]
+        if kv_pairs:
+            parts.append(f"  {kv_pairs}")
+        if logger:
+            parts.append(f" logger={logger}")
+
+        return "".join(parts)
+
+    # Logfmt formatter using structlog's stdlib integration
+    logfmt_formatter = structlog.stdlib.ProcessorFormatter(
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-            structlog.processors.JSONRenderer(),
+            human_readable_formatter,
         ],
         foreign_pre_chain=[
             structlog.contextvars.merge_contextvars,
@@ -133,27 +214,28 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
 
     # Handler 1: Per-job log file (if job_name provided)
     if job_name:
-        job_handler = logging.FileHandler(logs_dir / f"{job_name}.jsonl", mode="a")
+        job_handler = logging.FileHandler(logs_dir / f"{job_name}.log", mode="a")
         job_handler.setLevel(log_level)
-        job_handler.setFormatter(json_formatter)
+        job_handler.setFormatter(logfmt_formatter)
         root_logger.addHandler(job_handler)
 
     # Handler 2: Errors file (ERROR and CRITICAL only)
-    error_handler = logging.FileHandler(logs_dir / "errors.jsonl", mode="a")
+    error_handler = logging.FileHandler(logs_dir / "errors.log", mode="a")
     error_handler.setLevel(logging.ERROR)
-    error_handler.setFormatter(json_formatter)
+    error_handler.setFormatter(logfmt_formatter)
     root_logger.addHandler(error_handler)
 
     # Handler 3: Warnings file (WARNING only, not ERROR+)
     class WarningOnlyFilter(logging.Filter):
         """Only allow WARNING level (not ERROR or CRITICAL)."""
+
         def filter(self, record: logging.LogRecord) -> bool:
             return record.levelno == logging.WARNING
 
-    warning_handler = logging.FileHandler(logs_dir / "warnings.jsonl", mode="a")
+    warning_handler = logging.FileHandler(logs_dir / "warnings.log", mode="a")
     warning_handler.setLevel(logging.WARNING)
     warning_handler.addFilter(WarningOnlyFilter())
-    warning_handler.setFormatter(json_formatter)
+    warning_handler.setFormatter(logfmt_formatter)
     root_logger.addHandler(warning_handler)
 
 
