@@ -5,7 +5,6 @@ https://developers.google.com/youtube/v3/docs
 
 from __future__ import annotations
 
-import logging
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
@@ -15,9 +14,10 @@ from result import Err, Ok, Result
 
 from youtube_sync.io.youtube.auth import YouTubeAuth, create_auth_from_1password
 from youtube_sync.io.youtube.models import YouTubeSubscription
+from youtube_sync.logging import get_logger
 from youtube_sync.types import ErrorMessage
 
-logger = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # Type-only import: google-api-python-client-stubs provides accurate types generated from
 # Google's API discovery documents, but these types exist only in .pyi stub files and cannot
@@ -63,7 +63,7 @@ class YouTubeClient:
             Ok with list of subscription resources, or Err with error message
         """
         try:
-            logger.debug("Fetching YouTube subscriptions")
+            log.debug("fetching YouTube subscriptions")
             subscriptions = []
             subs_resource = self._youtube.subscriptions()
 
@@ -75,18 +75,18 @@ class YouTubeClient:
 
             page = 1
             while request is not None:
-                logger.debug(f"Fetching page {page} of YouTube subscriptions")
+                log.debug("fetching YouTube subscriptions page", page=page)
                 response = request.execute()
                 items = response.get("items", [])
-                logger.debug(f"Received {len(items)} subscriptions on page {page}")
+                log.debug("received YouTube subscriptions", page=page, count=len(items))
                 subscriptions.extend([YouTubeSubscription.model_validate(item) for item in items])
                 request = subs_resource.list_next(request, response)
                 page += 1
 
-            logger.debug(f"Total YouTube subscriptions fetched: {len(subscriptions)}")
+            log.debug("fetched all YouTube subscriptions", total=len(subscriptions))
             return Ok(subscriptions)
         except Exception as e:
-            logger.debug(f"YouTube API error: {e}")
+            log.error("YouTube API error", error=str(e))
             return Err(f"Failed to list YouTube subscriptions: {e}")
 
     def close(self) -> None:

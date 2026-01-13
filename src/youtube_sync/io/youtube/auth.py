@@ -9,7 +9,6 @@ Handles OAuth token lifecycle following RFC 9700 security best practices:
 from __future__ import annotations
 
 import json
-import logging
 import os
 from dataclasses import dataclass
 from datetime import datetime
@@ -20,8 +19,9 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 from youtube_sync.io.op.secrets import get_secret
+from youtube_sync.logging import get_logger
 
-logger = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 API_SCOPES = ["https://www.googleapis.com/auth/youtube.readonly"]
 
@@ -58,15 +58,15 @@ def _fetch_new_oauth_tokens(client_config: dict, scopes: list[str]) -> Credentia
 
     OAuth client: https://console.cloud.google.com/apis/credentials?project=michael-uloth
     """
-    logger.info("Fetching new OAuth tokens via browser flow...")
+    log.info("fetching new OAuth tokens via browser flow")
 
     try:
         flow = InstalledAppFlow.from_client_config(client_config, scopes)
         credentials = flow.run_local_server()
-        logger.info("Successfully obtained new OAuth tokens")
+        log.info("successfully obtained new OAuth tokens")
         return credentials
     except Exception as e:
-        logger.error(f"Unexpected error while fetching new OAuth tokens: {e}")
+        log.error("unexpected error while fetching new OAuth tokens", error=str(e))
         raise
 
 
@@ -85,10 +85,10 @@ def _cache_access_token(credentials: Credentials, tokens_file: Path) -> None:
         "expiry": credentials.expiry.isoformat() if credentials.expiry else None,
     }
 
-    logger.info(f'Caching access token to "{tokens_file}"')
+    log.debug("caching access token", tokens_file=str(tokens_file))
     with open(tokens_file, "w") as file:
         json.dump(token_data, file, indent=2)
-    logger.debug("Access token cached (refresh token stays in 1Password)")
+    log.debug("access token cached")
 
 
 @dataclass
@@ -135,20 +135,20 @@ class YouTubeAuth:
         credentials: Credentials | None = None
 
         # Try disk cache first (fast path - only if access token still valid)
-        logger.info("Checking for cached access token...")
+        log.debug("checking for cached access token", tokens_file=str(self.tokens_file))
         if self.tokens_file.exists():
             credentials = self._load_cached_credentials()
             if credentials and credentials.valid:
-                logger.info("Using cached access token (still valid)")
+                log.debug("using cached access token", status="valid")
                 return credentials
             if credentials:
-                logger.info("Cached access token expired")
+                log.debug("cached access token expired", status="expired")
 
         # Access token expired or missing - need to refresh using refresh token
-        logger.info("Fetching refresh token from 1Password...")
+        log.debug("fetching refresh token from 1Password")
         try:
             refresh_token = get_secret("YouTube API", "oauth_refresh_token")
-            logger.info("Loaded refresh token from 1Password")
+            log.debug("loaded refresh token from 1Password")
 
             # Build credentials with refresh token
             credentials = Credentials(
@@ -160,16 +160,16 @@ class YouTubeAuth:
                 scopes=self.scopes,
             )
         except Exception as e:
-            logger.warning(f"Error loading refresh token from 1Password: {e}")
+            log.warning("error loading refresh token from 1Password", error=str(e))
             return self._do_full_oauth_flow()
 
         # Use refresh token to get new access token
         try:
-            logger.info("Using refresh token to get new access token...")
+            log.debug("using refresh token to get new access token")
             credentials.refresh(Request())
-            logger.info("Access token refreshed successfully")
+            log.debug("access token refreshed successfully")
         except Exception as e:
-            logger.error(f"Refresh token invalid or expired: {e}")
+            log.error("refresh token invalid or expired", error=str(e))
             return self._do_full_oauth_flow()
 
         # Cache ONLY access token to disk (no refresh token, no client secrets)
@@ -180,7 +180,7 @@ class YouTubeAuth:
     def _load_cached_credentials(self) -> Credentials | None:
         """Load credentials from disk cache."""
         try:
-            logger.debug(f'Loading cached access token from "{self.tokens_file}"')
+            log.debug("loading cached access token", tokens_file=str(self.tokens_file))
             with open(self.tokens_file) as f:
                 token_data = json.load(f)
 
@@ -193,18 +193,18 @@ class YouTubeAuth:
                 expiry=expiry,
             )
         except Exception as e:
-            logger.warning(f"Error loading cached access token: {e}")
+            log.warning("error loading cached access token", error=str(e))
             return None
 
     def _do_full_oauth_flow(self) -> Credentials:
         """Perform full OAuth browser flow and prompt user to update 1Password."""
-        logger.info("Starting new OAuth browser flow...")
+        log.info("starting new OAuth browser flow")
         credentials = _fetch_new_oauth_tokens(self.client_config, self.scopes)
 
-        logger.warning(
-            "⚠️  Manual step required: Please update 'YouTube API' -> 'oauth_refresh_token' in 1Password"
+        log.warning(
+            "manual step required: please update 'YouTube API' -> 'oauth_refresh_token' in 1Password",
+            new_refresh_token=credentials.refresh_token,
         )
-        logger.warning(f"   New refresh token: {credentials.refresh_token}")
 
         # Cache and return
         _cache_access_token(credentials, self.tokens_file)

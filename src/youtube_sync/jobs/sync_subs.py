@@ -1,11 +1,12 @@
 import argparse
 
-import rich
 from result import Err, Ok
 
 from youtube_sync.io.feedbin import create_client as create_feedbin_client
 from youtube_sync.io.youtube import create_client as create_youtube_client
-from youtube_sync.logging import setup_logging
+from youtube_sync.logging import get_logger, setup_logging
+
+log = get_logger(__name__)
 
 
 def main():
@@ -35,33 +36,33 @@ Use --verbose to see detailed debug output.
     setup_logging(verbose=args.verbose)
 
     if args.apply:
-        rich.print("[bold yellow]⚠️  APPLY MODE - will make real changes[/bold yellow]")
+        log.warning("APPLY MODE - will make real changes", mode="apply")
     else:
-        rich.print("[bold cyan]🔍 DRY-RUN MODE - no changes will be made[/bold cyan]")
+        log.info("DRY-RUN MODE - no changes will be made", mode="dry_run")
 
-    rich.print("\n[bold]Fetching YouTube subscriptions[/bold]")
+    log.info("fetching YouTube subscriptions")
     youtube = create_youtube_client()
     yt_result = youtube.list_subscriptions()
 
     match yt_result:
         case Err(error):
-            rich.print(f"[red]Error:[/red] {error}")
+            log.error("failed to fetch YouTube subscriptions", error=error)
             return
         case Ok(yt_subs):
             yt_count = len(yt_subs)
-            rich.print(f"Total YouTube subscriptions: {yt_count}")
+            log.info("fetched YouTube subscriptions", count=yt_count)
 
-    rich.print("\n[bold]Fetching Feedbin subscriptions[/bold]")
+    log.info("fetching Feedbin subscriptions")
     feedbin = create_feedbin_client()
     fb_result = feedbin.list_subscriptions()
 
     match fb_result:
         case Err(error):
-            rich.print(f"[red]Error:[/red] {error}")
+            log.error("failed to fetch Feedbin subscriptions", error=error)
             return
         case Ok(fb_subs):
             fb_count = len(fb_subs)
-            rich.print(f"Total Feedbin subscriptions: {fb_count}")
+            log.info("fetched Feedbin subscriptions", count=fb_count)
 
     # Build YouTube feed URLs
     yt_feed_urls = set()
@@ -76,17 +77,18 @@ Use --verbose to see detailed debug output.
     # Find feeds that need to be created
     feeds_to_create = yt_feed_urls - fb_feed_urls
 
-    rich.print("\n[bold]Analysis:[/bold]")
-    rich.print(f"  YouTube feeds: {len(yt_feed_urls)}")
-    rich.print(f"  Feedbin feeds: {len(fb_feed_urls)}")
-    rich.print(f"  Feeds to create: {len(feeds_to_create)}")
+    log.info(
+        "analysis complete",
+        youtube_feeds=len(yt_feed_urls),
+        feedbin_feeds=len(fb_feed_urls),
+        feeds_to_create=len(feeds_to_create),
+    )
 
     if not feeds_to_create:
-        rich.print("\n[green]✓ All YouTube subscriptions already exist in Feedbin![/green]")
+        log.info("all YouTube subscriptions already exist in Feedbin")
         return
 
-    # Show which channels will be created
-    rich.print("\n[bold]Channels to create in Feedbin:[/bold]")
+    log.info("preparing to create subscriptions", count=len(feeds_to_create))
     for feed_url in sorted(feeds_to_create):
         # Find the channel name from YouTube subs
         channel_id = feed_url.split("channel_id=")[1]
@@ -104,22 +106,24 @@ Use --verbose to see detailed debug output.
             result = feedbin.create_subscription(feed_url)
             match result:
                 case Ok(_):
-                    rich.print(f"  ✓ Created: {channel_name}")
+                    log.info("created subscription", channel=channel_name, url=feed_url)
                 case Err(error):
-                    rich.print(f"  [red]✗ Failed to create {channel_name}: {error}[/red]")
+                    log.error(
+                        "failed to create subscription",
+                        channel=channel_name,
+                        url=feed_url,
+                        error=error,
+                    )
         else:
-            rich.print(f"  [dim]• {channel_name}[/dim]")
-            rich.print(f"    [dim]{feed_url}[/dim]")
+            log.info("would create subscription", channel=channel_name, url=feed_url)
 
     if not args.apply:
-        rich.print("\n[yellow]═══════════════════════════════════════════════[/yellow]")
-        rich.print("[yellow]DRY RUN - no changes were made to Feedbin[/yellow]")
-        rich.print(
-            f"[yellow]Run with --apply to create {len(feeds_to_create)} subscription(s)[/yellow]"
+        log.warning(
+            "DRY RUN complete - no changes were made",
+            would_create=len(feeds_to_create),
         )
-        rich.print("[yellow]═══════════════════════════════════════════════[/yellow]")
     else:
-        rich.print("\n[green]✓ Sync complete![/green]")
+        log.info("sync complete", created=len(feeds_to_create))
 
 
 if __name__ == "__main__":
