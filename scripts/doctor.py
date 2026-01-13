@@ -3,6 +3,9 @@
 Dev environment validation script.
 
 Checks that your local environment has everything needed to develop youtube-sync.
+
+Usage:
+    just doctor
 """
 
 import shutil
