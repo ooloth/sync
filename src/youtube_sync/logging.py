@@ -6,10 +6,13 @@ import sys
 import structlog
 from structlog.typing import FilteringBoundLogger
 
+from rich.console import Console
+from rich.traceback import install as install_rich_traceback
+
 
 def setup_logging(verbose: bool = False) -> None:
     """
-    Configure structured logging with excellent console output.
+    Configure structured logging with Rich for beautiful console output.
 
     Args:
         verbose: If True, show DEBUG logs. If False, show INFO+ logs.
@@ -22,20 +25,29 @@ def setup_logging(verbose: bool = False) -> None:
     """
     log_level = logging.DEBUG if verbose else logging.INFO
 
-    # Configure structlog for beautiful console output
+    # Install rich traceback handler for prettier exceptions
+    install_rich_traceback(
+        show_locals=True,  # Show local variables in tracebacks
+        suppress=[structlog],  # Don't show structlog internals
+    )
+
+    # Create Rich console for output
+    console = Console(stderr=True, force_terminal=sys.stderr.isatty())
+
+    # Configure structlog with Rich integration
     structlog.configure(
         processors=[
             # Add contextvars to all log entries
             structlog.contextvars.merge_contextvars,
             # Add log level to event dict
             structlog.processors.add_log_level,
-            # Add timestamp
-            structlog.processors.TimeStamper(fmt="iso", utc=True),
-            # Format exceptions nicely
-            structlog.processors.ExceptionRenderer(),
-            # Render to console with colors and pretty formatting
+            # Add timestamp (short format: HH:MM:SS)
+            structlog.processors.TimeStamper(fmt="%H:%M:%S", utc=False),
+            # Format stack info
+            structlog.processors.StackInfoRenderer(),
+            # Render to console with styling (Rich handles exceptions automatically)
             structlog.dev.ConsoleRenderer(
-                colors=sys.stderr.isatty(),  # Only use colors if terminal
+                colors=console.is_terminal,
             ),
         ],
         # Wrapper for filtering by level
@@ -48,8 +60,11 @@ def setup_logging(verbose: bool = False) -> None:
         cache_logger_on_first_use=True,
     )
 
+    # Integrate stdlib logging with structlog
+    # This makes all logging.getLogger() calls flow through structlog processors
+    structlog.stdlib.recreate_defaults(log_level=log_level)
+
     # Silence noisy third-party libraries via stdlib logging
-    # (structlog can still integrate with stdlib loggers if needed)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("httpcore").setLevel(logging.WARNING)
     logging.getLogger("googleapiclient").setLevel(logging.WARNING)
