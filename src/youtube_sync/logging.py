@@ -167,12 +167,18 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
 
     # Custom processor to format logs in human-readable style
     def human_readable_formatter(_, __, event_dict):
-        """Format logs as: timestamp [LEVEL] message  key=value key=value"""
+        """Format logs as: timestamp [LEVEL] message (padded)  key=value key=value"""
         # Extract main fields
-        timestamp = event_dict.pop("timestamp", "")
+        timestamp_full = event_dict.pop("timestamp", "")
         level = event_dict.pop("level", "").upper()
         event = event_dict.pop("event", "")
         logger = event_dict.pop("logger", "")
+
+        # Shorten timestamp: 2026-01-12T22:31:13.938019 -> 2026-01-12 22:31:13
+        if "T" in timestamp_full:
+            timestamp = timestamp_full.split("T")[0] + " " + timestamp_full.split("T")[1][:8]
+        else:
+            timestamp = timestamp_full
 
         # Pad level to consistent width
         level_padded = {
@@ -183,6 +189,9 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
             "CRITICAL": "CRITICAL",
         }.get(level, level)
 
+        # Pad event/message to consistent width (50 chars)
+        event_padded = event.ljust(50)
+
         # Format remaining key=value pairs
         kv_pairs = " ".join(
             f"{k}={v!r}" if isinstance(v, str) else f"{k}={v}"
@@ -190,9 +199,9 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
         )
 
         # Build final string
-        parts = [timestamp, f" [{level_padded}]", f" {event}"]
+        parts = [timestamp, f" [{level_padded}] {event_padded}"]
         if kv_pairs:
-            parts.append(f"  {kv_pairs}")
+            parts.append(f" {kv_pairs}")
         if logger:
             parts.append(f" logger={logger}")
 
