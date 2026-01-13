@@ -39,6 +39,13 @@ def setup_logging(verbose: bool = False, job_name: str | None = None) -> None:
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
 
+    # Processor to strip "youtube_sync." prefix from logger names
+    def strip_logger_prefix(logger, method_name, event_dict):
+        """Strip 'youtube_sync.' prefix from logger names for cleaner output."""
+        if "logger" in event_dict and event_dict["logger"].startswith("youtube_sync."):
+            event_dict["logger"] = event_dict["logger"][len("youtube_sync.") :]
+        return event_dict
+
     # Configure structlog to use stdlib logging backend (so file handlers work)
     structlog.configure(
         processors=[
@@ -48,6 +55,8 @@ def setup_logging(verbose: bool = False, job_name: str | None = None) -> None:
             structlog.processors.add_log_level,
             # Add logger name
             structlog.stdlib.add_logger_name,
+            # Strip youtube_sync. prefix from logger names
+            strip_logger_prefix,
             # Add timestamp (ISO format for files, will be reformatted for console)
             structlog.processors.TimeStamper(fmt="iso", utc=False),
             # Format stack info
@@ -65,7 +74,7 @@ def setup_logging(verbose: bool = False, job_name: str | None = None) -> None:
     )
 
     # Setup file logging handlers
-    _setup_file_logging(log_level, job_name)
+    _setup_file_logging(log_level, job_name, strip_logger_prefix)
 
     # Configure console handler with Rich formatting
     console_handler = logging.StreamHandler(sys.stderr)
@@ -85,6 +94,7 @@ def setup_logging(verbose: bool = False, job_name: str | None = None) -> None:
                 structlog.contextvars.merge_contextvars,
                 structlog.processors.add_log_level,
                 structlog.stdlib.add_logger_name,
+                strip_logger_prefix,
                 structlog.processors.TimeStamper(fmt="iso", utc=False),
             ],
         )
@@ -99,7 +109,7 @@ def setup_logging(verbose: bool = False, job_name: str | None = None) -> None:
     logging.getLogger("googleapiclient").setLevel(logging.WARNING)
 
 
-def _setup_file_logging(log_level: int, job_name: str | None) -> None:
+def _setup_file_logging(log_level: int, job_name: str | None, strip_logger_prefix) -> None:
     """
     Setup logfmt-style file logging with separate files for different log levels.
 
@@ -215,6 +225,7 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
             structlog.contextvars.merge_contextvars,
             structlog.processors.add_log_level,
             structlog.stdlib.add_logger_name,
+            strip_logger_prefix,
             structlog.processors.TimeStamper(fmt="iso", utc=False),
         ],
     )
