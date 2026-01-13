@@ -167,7 +167,7 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
 
     # Custom processor to format logs in human-readable style
     def human_readable_formatter(_, __, event_dict):
-        """Format logs as: timestamp [LEVEL] message (padded)  key=value key=value"""
+        """Format logs as: timestamp [LEVEL] [logger] message key=value key=value"""
         # Extract main fields
         timestamp_full = event_dict.pop("timestamp", "")
         level = event_dict.pop("level", "").upper()
@@ -189,9 +189,6 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
             "CRITICAL": "CRITICAL",
         }.get(level, level)
 
-        # Pad event/message to consistent width (50 chars)
-        event_padded = event.ljust(50)
-
         # Format remaining key=value pairs
         kv_pairs = " ".join(
             f"{k}={v!r}" if isinstance(v, str) else f"{k}={v}"
@@ -199,11 +196,12 @@ def _setup_file_logging(log_level: int, job_name: str | None) -> None:
         )
 
         # Build final string
-        parts = [timestamp, f" [{level_padded}] {event_padded}"]
+        parts = [timestamp, f" [{level_padded}]"]
+        if logger:
+            parts.append(f" [{logger}]")
+        parts.append(f" {event}")
         if kv_pairs:
             parts.append(f" {kv_pairs}")
-        if logger:
-            parts.append(f" logger={logger}")
 
         return "".join(parts)
 
