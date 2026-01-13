@@ -24,6 +24,7 @@ dependencies = [
     "opentelemetry-instrumentation-urllib>=0.60b1",
     "pydantic>=2.12.5",
     "result>=0.17.0",
+    "structlog>=25.5.0",
 ]
 
 [dependency-groups]
