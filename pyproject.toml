@@ -18,6 +18,10 @@ dependencies = [
     "google-auth-oauthlib>=1.2.3",
     "httpx>=0.28.1",
     "logfire>=4.18.0",
+    "opentelemetry-instrumentation-httpx>=0.60b1",
+    "opentelemetry-instrumentation-requests>=0.60b1",
+    "opentelemetry-instrumentation-sqlite3>=0.60b1",
+    "opentelemetry-instrumentation-urllib>=0.60b1",
     "pydantic>=2.12.5",
     "result>=0.17.0",
 ]
