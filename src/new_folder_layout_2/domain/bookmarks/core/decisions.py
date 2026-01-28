@@ -1,8 +1,8 @@
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class BookmarksToAddDecision(Enum):
+class BookmarksToAddDecision(StrEnum):
     ADD_BOOKMARKS = "add_bookmarks"
     NO_ACTION_NEEDED = "no_action_needed"
 
@@ -27,6 +27,7 @@ def bookmarks_to_add(
         current = {"http://example.com/a", "http://example.com/b"}
         desired = {"http://example.com/a", "http://example.com/c"}
         result = bookmarks_to_add(current, desired)
+
         match result.decision:
             case BookmarksToAddDecision.ADD_BOOKMARKS:
                 print("Bookmarks to add:", result.bookmarks_to_add)
