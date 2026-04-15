@@ -5,7 +5,7 @@ import sync.io.youtube.likes as youtube
 from sync.errors import invariant
 from sync.logging import get_logger, setup_logging
 
-from .decisions import BookmarksToAddDecision, choose_bookmarks_to_add
+from .core import BookmarksToAddDecision, choose_bookmarks_to_add
 
 log = get_logger(__name__)
 
