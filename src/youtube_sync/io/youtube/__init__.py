@@ -10,4 +10,5 @@ __all__ = [
     "YouTubeSubscription",
     "create_auth_from_1password",
     "create_client",
+    "likes",
 ]

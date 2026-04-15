@@ -10,12 +10,12 @@ class BookmarksToAddDecision(StrEnum):
 @dataclass(frozen=True, slots=True)
 class BookmarksToAddResult:
     decision: BookmarksToAddDecision
-    bookmarks_to_add: set | None
+    bookmarks_to_add: set[str]
 
 
-def bookmarks_to_add(
+def choose_bookmarks_to_add(
     current_bookmark_urls: set[str],
-    desired_bookmark_urls: set,
+    desired_bookmark_urls: set[str],
 ) -> BookmarksToAddResult:
     """
     Determine which bookmarks need to be added.
@@ -36,13 +36,10 @@ def bookmarks_to_add(
     """
     new_bookmarks = desired_bookmark_urls - current_bookmark_urls
 
-    if not new_bookmarks:
-        return BookmarksToAddResult(
-            decision=BookmarksToAddDecision.NO_ACTION_NEEDED,
-            bookmarks_to_add=None,
-        )
-
-    return BookmarksToAddResult(
-        decision=BookmarksToAddDecision.ADD_BOOKMARKS,
-        bookmarks_to_add=new_bookmarks,
+    decision = (
+        BookmarksToAddDecision.ADD_BOOKMARKS
+        if new_bookmarks
+        else BookmarksToAddDecision.NO_ACTION_NEEDED
     )
+
+    return BookmarksToAddResult(decision=decision, bookmarks_to_add=new_bookmarks)
