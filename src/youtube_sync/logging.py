@@ -201,8 +201,7 @@ def _setup_file_logging(log_level: int, job_name: str | None, strip_logger_prefi
 
         # Format remaining key=value pairs
         kv_pairs = " ".join(
-            f"{k}={v!r}" if isinstance(v, str) else f"{k}={v}"
-            for k, v in event_dict.items()
+            f"{k}={v!r}" if isinstance(v, str) else f"{k}={v}" for k, v in event_dict.items()
         )
 
         # Build final string
@@ -257,11 +256,9 @@ def _setup_file_logging(log_level: int, job_name: str | None, strip_logger_prefi
     root_logger.addHandler(warning_handler)
 
     # Write divider to separate runs in log files
-    import datetime
-
     divider = f"\n{'=' * 80}\n"
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    run_marker = f"Run started: {timestamp}\n{'=' * 80}\n"
+    # timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # run_marker = f"Run started: {timestamp}\n{'=' * 80}\n"
 
     # Write to each file handler
     if job_name:
