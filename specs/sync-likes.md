@@ -16,18 +16,18 @@ YouTube's "Liked videos" playlist is a flat, unsearchable list. Syncing liked vi
 
 ### Data to capture per video
 
-| Field | Source | Notes |
-|-------|--------|-------|
-| Title | YouTube API | Video title |
-| Channel | YouTube API | Channel name |
-| URL | Constructed | `https://youtube.com/watch?v={id}` |
-| Date liked | YouTube API | When the user liked the video |
-| Thumbnail | YouTube API | Medium-resolution thumbnail URL |
+| Field      | Source      | Notes                              |
+| ---------- | ----------- | ---------------------------------- |
+| Title      | YouTube API | Video title                        |
+| Channel    | YouTube API | Channel name                       |
+| URL        | Constructed | `https://youtube.com/watch?v={id}` |
+| Date liked | YouTube API | When the user liked the video      |
+| Thumbnail  | YouTube API | Medium-resolution thumbnail URL    |
 
 ## CLI interface
 
 ```
-python -m youtube_sync.jobs.sync_likes [--apply] [--verbose]
+python -m sync.jobs.sync_likes [--apply] [--verbose]
 ```
 
 Should follow the same dry-run/apply pattern as sync-subs.

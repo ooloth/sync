@@ -49,7 +49,7 @@ def check_uv_installed() -> bool:
         version = result.stdout.strip()
         console.print(f"✓ {version}", style="green")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    except subprocess.CalledProcessError, subprocess.TimeoutExpired:
         console.print("✗ uv found but couldn't get version", style="red")
         return False
 
@@ -70,7 +70,7 @@ def check_1password_cli() -> bool:
         version = result.stdout.strip()
         console.print(f"✓ 1Password CLI {version}", style="green")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    except subprocess.CalledProcessError, subprocess.TimeoutExpired:
         console.print("✗ op found but couldn't get version", style="red")
         return False
 
@@ -167,7 +167,7 @@ def check_git_repo() -> bool:
         )
         console.print("✓ Git repository", style="green")
         return True
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+    except subprocess.CalledProcessError, subprocess.TimeoutExpired:
         console.print("✗ Not in a git repository", style="red")
         return False
 

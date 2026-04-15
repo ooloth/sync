@@ -5,7 +5,7 @@ youtube-sync is a Python CLI tool that syncs content between YouTube and other s
 ## Project structure
 
 ```
-src/youtube_sync/
+src/sync/
 ├── io/              # External service adapters (one folder per service)
 │   ├── feedbin/
 │   ├── op/          # 1Password CLI wrapper
@@ -84,7 +84,7 @@ Configured in `logging.py` using structlog + Rich:
   - `{job_name}.log` — all logs for that job
   - `errors.log` — ERROR+ from any job
   - `warnings.log` — WARNING only (not ERROR+)
-- Logger names strip the `youtube_sync.` prefix for cleaner output
+- Logger names strip the `sync.` prefix for cleaner output
 - Third-party loggers (httpx, httpcore, googleapiclient) silenced to WARNING
 
 Jobs configure logging at startup:
@@ -102,13 +102,13 @@ setup_logging(verbose=args.verbose, job_name="sync_subs")
 
 ## Tooling
 
-| Tool | Purpose |
-|------|---------|
-| uv | Package/environment management |
-| ruff | Linting + formatting |
-| ty | Type checking |
-| hatchling | Build backend |
-| just | Task runner (see `justfile`) |
-| Python 3.14 | Runtime |
+| Tool        | Purpose                        |
+| ----------- | ------------------------------ |
+| uv          | Package/environment management |
+| ruff        | Linting + formatting           |
+| ty          | Type checking                  |
+| hatchling   | Build backend                  |
+| just        | Task runner (see `justfile`)   |
+| Python 3.14 | Runtime                        |
 
 Quality checks: `just check` (format, lint, type-check, test) or `just check-fast` (skip tests).

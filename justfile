@@ -31,13 +31,13 @@ test-verbose:
     uv run pytest -v
 
 test-coverage:
-    uv run pytest --cov=src/youtube_sync --cov-report=term-missing
+    uv run pytest --cov=src/sync --cov-report=term-missing
 
 sync-subs:
-    uv run python -m youtube_sync.jobs.sync_subs
+    uv run python -m sync.jobs.sync_subs
 
 sync-subs-apply:
-    uv run python -m youtube_sync.jobs.sync_subs --apply
+    uv run python -m sync.jobs.sync_subs --apply
 
 sync-subs-verbose:
-    uv run python -m youtube_sync.jobs.sync_subs --verbose
+    uv run python -m sync.jobs.sync_subs --verbose

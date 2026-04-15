@@ -17,7 +17,7 @@ YouTube's subscription feed is unreliable — it misses uploads and doesn't supp
 ## CLI interface
 
 ```
-python -m youtube_sync.jobs.sync_subs [--apply] [--verbose]
+python -m sync.jobs.sync_subs [--apply] [--verbose]
 ```
 
 | Flag | Default | Effect |

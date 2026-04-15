@@ -5,10 +5,10 @@ build-backend = "hatchling.build"
 
 # Required when using src layout
 [tool.hatchling.build.targets.wheel]
-packages = ["src/youtube_sync"]
+packages = ["src/sync"]
 
 [project]
-name = "youtube-sync"
+name = "sync"
 version = "0.1.0"
 description = "Adds my YouTube subscriptions to my Feedbin subscriptions and my liked videos to Notion."
 readme = "README.md"
