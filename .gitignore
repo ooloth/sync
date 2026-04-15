@@ -1,7 +1,9 @@
 # Theirs
 __pycache__/
+.DS_Store
 
 # Mine
 .beads/
 .logs/
 .secrets/
+.trekker/
