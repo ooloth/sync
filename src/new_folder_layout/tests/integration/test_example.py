@@ -1,10 +1,9 @@
 import pytest
+from src.new_folder_layout.core.app.register_user import RegisterUserCommand, register_user
 
 
 @pytest.mark.integration
 def test_user_is_persisted(integration_ctx):
-    from core.app.register_user import RegisterUserCommand, register_user
-
     register_user(
         RegisterUserCommand(email="b@example.com"),
         users=integration_ctx.users,
