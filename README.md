@@ -1,4 +1,4 @@
-# youtube-sync
+# sync
 
 [![CI](https://github.com/ooloth/youtube-sync/actions/workflows/ci.yml/badge.svg)](https://github.com/ooloth/youtube-sync/actions/workflows/ci.yml)
 
